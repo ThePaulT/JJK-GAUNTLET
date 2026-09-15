@@ -43,21 +43,38 @@ export function CharacterCard({
         disabled ? 'opacity-40' : '',
       ].join(' ')}
     >
-      <div className="flex items-start gap-3">
-        <Portrait id={id} size={compact ? 40 : 52} className="shrink-0 border border-sand" />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="display text-lg leading-tight">{c.name}</span>
-            <span className={`shrink-0 whitespace-nowrap text-xs ${SIDE_ACCENT[c.side]}`}>
+      {compact ? (
+        <div className="flex items-start gap-3">
+          <Portrait id={id} size={44} className="shrink-0 border border-sand" />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="display text-lg leading-tight">{c.name}</span>
+              <span className={`shrink-0 whitespace-nowrap text-xs ${SIDE_ACCENT[c.side]}`}>
+                {c.tier} · {c.power}
+              </span>
+            </div>
+            <div className="eyebrow">{c.role.replace(/_/g, ' ')}</div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="relative aspect-[3/4] w-full border border-sand">
+            <Portrait id={id} className="h-full w-full" />
+            <span
+              className={`absolute top-0 right-0 bg-ink/85 px-1.5 py-0.5 text-xs ${SIDE_ACCENT[c.side]}`}
+            >
               {c.tier} · {c.power}
             </span>
           </div>
-          <div className="eyebrow">
-            {c.role.replace(/_/g, ' ')}
-            {c.rarity !== 'common' ? ` · ${c.rarity}` : ''}
+          <div className="flex flex-col gap-1">
+            <span className="display text-lg leading-tight">{c.name}</span>
+            <span className="eyebrow">
+              {c.role.replace(/_/g, ' ')}
+              {c.rarity !== 'common' ? ` · ${c.rarity}` : ''}
+            </span>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {!compact ? (
         <>

@@ -54,7 +54,7 @@ export function RoundView({
             <span key={id} className="flex items-center gap-1.5">
               <Portrait
                 id={id}
-                size={28}
+                size={34}
                 className={`border border-sand ${round.fellIds.includes(id) ? 'opacity-30' : ''}`}
               />
               <span
@@ -70,7 +70,7 @@ export function RoundView({
           {round.enemyIds.map((id) => (
             <span key={id} className="flex items-center gap-1.5">
               <span className="text-[11px] text-bone">{character(id).name}</span>
-              <Portrait id={id} size={28} className="border border-sand" />
+              <Portrait id={id} size={34} className="border border-sand" />
             </span>
           ))}
         </div>
