@@ -4,6 +4,7 @@ import { character } from '@/lib/data.ts';
 import type { RoundResult } from '@/lib/engine.ts';
 
 import { BreakdownPanel } from './breakdown-panel.tsx';
+import { Portrait } from './portrait.tsx';
 
 export function RoundView({
   round,
@@ -46,6 +47,34 @@ export function RoundView({
           </span>
         </div>
       </header>
+
+      <div className="flex items-center gap-4 border-y border-sand py-3">
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          {round.teamIds.map((id) => (
+            <span key={id} className="flex items-center gap-1.5">
+              <Portrait
+                id={id}
+                size={28}
+                className={`border border-sand ${round.fellIds.includes(id) ? 'opacity-30' : ''}`}
+              />
+              <span
+                className={`text-[11px] ${round.fellIds.includes(id) ? 'text-ash line-through' : 'text-bone'}`}
+              >
+                {character(id).name}
+              </span>
+            </span>
+          ))}
+        </div>
+        <span className="eyebrow shrink-0">vs</span>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {round.enemyIds.map((id) => (
+            <span key={id} className="flex items-center gap-1.5">
+              <span className="text-[11px] text-bone">{character(id).name}</span>
+              <Portrait id={id} size={28} className="border border-sand" />
+            </span>
+          ))}
+        </div>
+      </div>
 
       <div className="min-h-[3.5rem] text-sm leading-relaxed">
         {storyState === 'loading' ? (

@@ -4,6 +4,11 @@ import type { RoundResult } from '@/lib/engine.ts';
 import { narrateRound } from '@/lib/narrate.ts';
 import type { Side } from '@/lib/types.ts';
 
+// Richer narration takes several seconds, and one retry on a rate limit can add
+// a few more. Vercel's default function ceiling is well under that; Hobby
+// allows up to 60s.
+export const maxDuration = 60;
+
 interface Body {
   side: Side;
   round: RoundResult;

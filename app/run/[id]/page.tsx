@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { Portrait } from '@/components/portrait.tsx';
 import { RoundView } from '@/components/round-view.tsx';
 import { ShareButtons } from '@/components/share-buttons.tsx';
 import { DB, character } from '@/lib/data.ts';
@@ -54,7 +55,11 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
         </div>
         <div className="flex flex-wrap gap-2">
           {run.teamIds.map((cid) => (
-            <span key={cid} className="border border-sand px-2 py-1 text-xs">
+            <span
+              key={cid}
+              className="flex items-center gap-2 border border-sand py-1 pr-2 pl-1 text-xs"
+            >
+              <Portrait id={cid} size={26} />
               {character(cid).name}
             </span>
           ))}
@@ -67,9 +72,12 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
       </header>
 
       <section className="flex flex-wrap items-center gap-6">
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1">
           <span className="eyebrow">MVP</span>
-          <span>{facts.mvpName ?? '—'}</span>
+          <span className="flex items-center gap-2">
+            {facts.mvpId ? <Portrait id={facts.mvpId} size={26} className="border border-sand" /> : null}
+            {facts.mvpName ?? '—'}
+          </span>
         </div>
         <div className="flex flex-col">
           <span className="eyebrow">Ladder</span>

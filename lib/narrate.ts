@@ -21,20 +21,65 @@ export interface NarrationRequest {
 
 const SYSTEM = `You narrate fights in a Jujutsu Kaisen fan game.
 
-The fight has already been decided by the game engine before you are called.
-You are given the result as fact. You never decide, change, hedge, or
-contradict it: if the brief says a character fell, they fell; if it says the
-team won, they won. Never invent a different winner, a survival, or a
-"but then...". Never write a cliffhanger that reverses the result.
+THE RESULT IS ALREADY DECIDED. You are given it as fact. You never change,
+hedge, or contradict it: if the brief says a character fell, they fell; if it
+says the team lost, they lost. Never invent a different winner, a survival, or
+a "but then...". Never end on a reversal or a cliffhanger that undoes it.
 
-Write 3-4 sentences of tight, present-tense manga narration. Plain prose only:
-no markdown, no asterisks or underscores around words, no quotation marks
-around technique names. Use the
-techniques and the story hooks you are given — they are the material. Name the
-characters. Keep it concrete and physical: what the technique does, where it
-lands, what it costs. No emoji, no headings, no bullet points, no meta
-commentary about rolls, scores, numbers, or probabilities. Do not use the
-words "engine", "roll", "dice", or "simulation".`;
+Write 5 to 7 sentences of present-tense manga narration, in this shape:
+
+1. Open on the exchange — who moves first and what they throw.
+2. Work through the beats you are given, in the order they are listed. Name
+   every technique by its actual name. If a domain is expanded, give it its
+   full name and say what its sure-hit does. If Black Flash lands, it is the
+   loudest moment on the page — treat it that way.
+3. Land the result: who goes down, and what it cost the winner.
+
+Rules for the prose:
+- Name techniques, domains and characters exactly as the brief spells them.
+- Be concrete and physical: what the technique does, where it lands, what
+  breaks. Cursed energy is visible, loud and expensive.
+- Vary your openings. Do not start every round the same way.
+- Plain prose only: no markdown, no asterisks or underscores around words, no
+  quotation marks around technique names, no emoji, no headings, no bullets.
+- Never mention rolls, scores, numbers, percentages, probabilities, or the
+  words engine, roll, dice, or simulation. The reader sees a fight, not a
+  scoreboard.
+- A beat marked "fan theory" is speculation — write it as something that
+  surprises everyone watching, not as an established fact.`;
+
+/** Everything the DB knows about a fighter that a narrator can use. */
+function describe(c: ReturnType<typeof character>): string {
+  const lines = [`- ${c.name} (${c.tier} tier${c.canon_grade !== '-' ? `, ${c.canon_grade}` : ''})`];
+  lines.push(`  Who they are: ${c.story_hook}`);
+  lines.push(`  Techniques: ${c.techniques.join('; ')}`);
+  if (c.domain.name) {
+    lines.push(
+      `  Domain: ${c.domain.name} (${c.domain.type})` +
+        (c.domain.sure_hit ? ` — sure hit: ${c.domain.sure_hit}` : ''),
+    );
+  }
+  if (c.special) lines.push(`  Signature: ${c.special.description}`);
+  return lines.join('\n');
+}
+
+/** The domain user on a side, if their domain actually mattered this round. */
+function domainBeat(ids: string[], notes: { rule: string; value: number }[]): string | null {
+  const expanded = notes.some(
+    (n) => (n.rule === 'domain_pressure' || n.rule === 'domain_clash') && n.value > 0,
+  );
+  if (!expanded) return null;
+  const user = ids
+    .map((id) => character(id))
+    .filter((c) => c.tags.includes('sure_hit_domain') && c.domain.name)
+    .sort((a, b) => b.stats.dom - a.stats.dom)[0];
+  if (!user) return null;
+  return (
+    `${user.name} expands ${user.domain.name}` +
+    (user.domain.sure_hit ? ` — its sure hit is ${user.domain.sure_hit}` : '') +
+    '. Put this on the page.'
+  );
+}
 
 function brief(req: NarrationRequest): string {
   const { round, side } = req;
@@ -43,62 +88,109 @@ function brief(req: NarrationRequest): string {
   const fallen = round.fellIds.map((id) => character(id).name);
   const enemyFallen = round.enemyFellIds.map((id) => character(id).name);
 
-  const describe = (c: ReturnType<typeof character>) =>
-    `- ${c.name}: ${c.story_hook} Techniques: ${c.techniques.join('; ')}.`;
-
   const lines = [
     `Side: ${side === 'hero' ? 'sorcerers' : 'curses and killers'}.`,
-    `Round ${round.round}${round.rung >= 0 ? ` — ladder rung ${round.rung + 1}` : ''}.`,
+    `Round ${round.round}${round.rung >= 0 ? ` — rung ${round.rung + 1} of the ladder` : ''}.`,
     '',
-    'The team:',
+    'THE TEAM',
     ...team.map(describe),
     '',
-    'Facing:',
+    'FACING',
     ...enemies.map(describe),
     '',
-    'WHAT HAPPENED (fact, not to be changed):',
+    'THE RESULT (fact — do not change it):',
     round.won
-      ? `The team WINS this round. ${enemies.map((e) => e.name).join(' and ')} goes down.`
-      : `The team LOSES this round. ${enemies.map((e) => e.name).join(' and ')} is still standing.`,
+      ? `The team WINS. ${enemies.map((e) => e.name).join(' and ')} goes down.`
+      : `The team LOSES. ${enemies.map((e) => e.name).join(' and ')} is still standing at the end.`,
   ];
 
-  if (round.upset && round.upsetReason) {
-    const who =
-      round.upsetSide === 'team'
-        ? 'The team pulls off an UPSET and steals a round it was losing'
-        : 'The team is UPSET: it was ahead and loses anyway';
-    lines.push(`${who} — ${round.upsetReason.replace(/^UPSET — /, '')}`);
-  }
-  if (round.narrowWin && round.won) lines.push('It was won by a hair.');
-  if (fallen.length) lines.push(`Knocked out of the fight: ${fallen.join(', ')}.`);
-  if (enemyFallen.length) lines.push(`Also down on the other side: ${enemyFallen.join(', ')}.`);
+  const beats: string[] = [];
 
-  const counters = round.team.firedCounters.filter((c) => c.bonus > 0 || c.upset_chance > 0);
-  if (counters.length) {
-    lines.push(
-      'Matchup facts to use:',
-      ...counters.map(
-        (c) =>
-          `- ${c.attacker_tag.replace(/_/g, ' ')} against ${c.defender_tag.replace(/_/g, ' ')}: ${c.explanation}${
-            c.canon_status === 'fan_theory' ? ' (fan theory — keep it hedged)' : ''
-          }`,
-      ),
+  // Domains, named, on whichever side actually opened one.
+  const ourDomain = domainBeat(round.teamIds, round.team.domainNotes);
+  const theirDomain = domainBeat(round.enemyIds, round.enemy.domainNotes);
+  if (ourDomain) beats.push(ourDomain);
+  if (theirDomain) beats.push(theirDomain);
+  for (const note of [...round.team.domainNotes, ...round.enemy.domainNotes]) {
+    if (note.rule === 'zero_ce_immunity') {
+      beats.push(
+        'A fighter with zero cursed energy cannot be targeted by that closed domain — the ' +
+          'sure hit passes straight through them. Show it failing on them.',
+      );
+    }
+    if (note.rule === 'anti_domain') {
+      beats.push(
+        'Simple Domain holds the sure hit off — a thin shell of cursed energy carving out a ' +
+          'space the domain cannot reach into.',
+      );
+    }
+    if (note.rule === 'open_domain_exception') {
+      beats.push(
+        'This domain is barrierless: it has no walls to hide behind and it cuts everything ' +
+          'in range.',
+      );
+    }
+  }
+
+  if (round.team.blackFlash > 0) {
+    beats.push(
+      'BLACK FLASH lands for the team — cursed energy and impact inside a hundredth of a ' +
+        'second, the world going black-and-red around the hit. Make it the biggest beat.',
     );
   }
-  const domains = round.enemy.domainNotes.concat(round.team.domainNotes);
-  if (domains.length) {
-    lines.push('Domain situation: ' + domains.map((d) => d.text).join(' '));
+  if (round.enemy.blackFlash > 0) {
+    beats.push('BLACK FLASH lands for the enemy. Make it hurt.');
   }
-  const specials = [...round.team.specialNotes, ...round.notes]
-    .filter(Boolean)
-    .map((note) => note.replace(/\s*\([+-]?\d+(?:\s[a-z]+)?\)/g, '').trim());
-  if (specials.length) lines.push('Beats to include:', ...specials.map((s) => `- ${s}`));
+
+  for (const c of round.team.firedCounters) {
+    beats.push(
+      `${c.attacker_tag.replace(/_/g, ' ')} beats ${c.defender_tag.replace(/_/g, ' ')}: ` +
+        `${c.explanation}${c.canon_status === 'fan_theory' ? ' (fan theory — write it as a shock)' : ''}`,
+    );
+  }
+  for (const c of round.enemy.firedCounters) {
+    beats.push(`Working against the team: ${c.explanation}`);
+  }
+
+  for (const s of round.team.firedSynergies) {
+    beats.push(
+      s.bonus < 0
+        ? `${s.label}: these two will not cooperate. ${s.explanation}`
+        : `${s.label}: ${s.explanation}`,
+    );
+  }
+
+  // Specials the engine actually fired, described in the DB's own words.
+  for (const note of round.notes) {
+    if (note.startsWith('UPSET')) continue;
+    beats.push(note.replace(/\s*\([+-]?\d+(?:\s[a-z]+)?\)/g, '').trim());
+  }
+  for (const c of team) {
+    if (c.special && round.team.specialNotes.some((n) => n.startsWith(c.name))) {
+      beats.push(`${c.name}'s signature fires: ${c.special.description}`);
+    }
+  }
+
+  if (round.upset && round.upsetReason) {
+    const reason = round.upsetReason.replace(/^UPSET — /, '');
+    beats.push(
+      round.upsetSide === 'team'
+        ? `THE UPSET: the team was losing this and steals it anyway. ${reason}`
+        : `THE UPSET: the team was ahead and loses anyway. ${reason}`,
+    );
+  }
+  if (round.narrowWin && round.won) beats.push('It is won by a hair, not comfortably.');
+  if (fallen.length) beats.push(`Knocked out of the run: ${fallen.join(', ')}. Show how.`);
+  if (enemyFallen.length) beats.push(`Also down: ${enemyFallen.join(', ')}.`);
+
+  if (beats.length) lines.push('', 'BEATS TO USE, IN THIS ORDER:', ...beats.map((b) => `- ${b}`));
 
   if (req.runOver) {
     lines.push(
+      '',
       req.fullClear
-        ? 'This is the final round of the run and the team has cleared the whole ladder. End on that.'
-        : 'This is the final round of the run: the team is wiped out here. End on that.',
+        ? 'This is the last round and the team has cleared the entire ladder. End on that.'
+        : 'This is the last round: the team is wiped out here. End on that.',
     );
   }
 
@@ -247,6 +339,26 @@ async function narrateWithGemini(system: string, userBrief: string): Promise<str
   if (!response.ok && /thinking/i.test(data.error?.message ?? '')) {
     response = await send(used, false);
     data = (await response.json()) as GeminiResponse;
+  }
+
+  // Free-tier quota is per-minute as well as per-day, and a burst of rounds can
+  // trip it. Google returns the delay it wants in the error body; wait that
+  // long once rather than dropping the round to the template.
+  if (response.status === 429) {
+    const seconds = Number(
+      /retryDelay"?\s*:\s*"?(\d+(?:\.\d+)?)s/i.exec(JSON.stringify(data))?.[1] ?? 6,
+    );
+    const wait = Math.min(Math.max(seconds, 1), 12) * 1000;
+    console.error(`narration: Gemini rate limit; retrying once in ${wait / 1000}s`);
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    response = await send(used, true);
+    data = (await response.json()) as GeminiResponse;
+    if (response.status === 429) {
+      console.error(
+        'narration: still rate limited — this round falls back to the local narrator. ' +
+          'Free tier allows roughly 15 requests a minute.',
+      );
+    }
   }
 
   // Google retires models, and says so in the 404: "This model models/X is no

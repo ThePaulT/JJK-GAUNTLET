@@ -11,6 +11,7 @@ import { randomSeed } from '@/lib/rng.ts';
 import type { Mode, Side } from '@/lib/types.ts';
 
 import { CharacterCard } from './character-card.tsx';
+import { Portrait } from './portrait.tsx';
 import { RoundView } from './round-view.tsx';
 import { ShareButtons } from './share-buttons.tsx';
 
@@ -186,7 +187,11 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
         {picks.length ? (
           <div className="flex flex-wrap gap-2">
             {picks.map((id) => (
-              <span key={id} className="border border-sand px-2 py-1 text-xs text-bone">
+              <span
+                key={id}
+                className="flex items-center gap-2 border border-sand py-1 pr-2 pl-1 text-xs text-bone"
+              >
+                <Portrait id={id} size={22} />
                 {character(id).name}
               </span>
             ))}
@@ -227,7 +232,22 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
           <span className="eyebrow">
             {ladder.label} · seed {seed}
           </span>
-          <h1 className="display text-3xl">{picks.map((id) => character(id).name).join(' / ')}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            {picks.map((id) => (
+              <span key={id} className="flex items-center gap-2">
+                <Portrait
+                  id={id}
+                  size={34}
+                  className={`border border-sand ${
+                    result.survivorIds.length && !result.survivorIds.includes(id) && phase === 'done'
+                      ? 'opacity-30'
+                      : ''
+                  }`}
+                />
+                <span className="display text-2xl">{character(id).name}</span>
+              </span>
+            ))}
+          </div>
         </div>
         <div className="flex gap-1">
           {ladder.rungs.map((id, i) => {
@@ -301,7 +321,16 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
           <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs sm:grid-cols-4">
             <div className="flex flex-col border-t border-sand pt-2">
               <dt className="text-ash">MVP</dt>
-              <dd>{result.mvpId ? character(result.mvpId).name : '—'}</dd>
+              <dd className="flex items-center gap-2">
+                {result.mvpId ? (
+                  <>
+                    <Portrait id={result.mvpId} size={26} className="border border-sand" />
+                    {character(result.mvpId).name}
+                  </>
+                ) : (
+                  '—'
+                )}
+              </dd>
             </div>
             <div className="flex flex-col border-t border-sand pt-2">
               <dt className="text-ash">Still standing</dt>

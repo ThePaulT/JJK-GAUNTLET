@@ -1,5 +1,7 @@
 import { character } from '@/lib/data.ts';
 
+import { Portrait } from './portrait.tsx';
+
 const SIDE_ACCENT: Record<string, string> = {
   hero: 'text-curse',
   villain: 'text-blood',
@@ -41,16 +43,20 @@ export function CharacterCard({
         disabled ? 'opacity-40' : '',
       ].join(' ')}
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="display text-lg leading-tight">{c.name}</span>
-        <span className={`shrink-0 whitespace-nowrap text-xs ${SIDE_ACCENT[c.side]}`}>
-          {c.tier} · {c.power}
-        </span>
-      </div>
-
-      <div className="eyebrow">
-        {c.role.replace(/_/g, ' ')}
-        {c.rarity !== 'common' ? ` · ${c.rarity}` : ''}
+      <div className="flex items-start gap-3">
+        <Portrait id={id} size={compact ? 40 : 52} className="shrink-0 border border-sand" />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="display text-lg leading-tight">{c.name}</span>
+            <span className={`shrink-0 whitespace-nowrap text-xs ${SIDE_ACCENT[c.side]}`}>
+              {c.tier} · {c.power}
+            </span>
+          </div>
+          <div className="eyebrow">
+            {c.role.replace(/_/g, ' ')}
+            {c.rarity !== 'common' ? ` · ${c.rarity}` : ''}
+          </div>
+        </div>
       </div>
 
       {!compact ? (
