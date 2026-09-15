@@ -35,7 +35,7 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
   const [result, setResult] = useState<RunResult | null>(null);
   const [revealed, setRevealed] = useState(0);
   const [stories, setStories] = useState<Record<number, string>>({});
-  const [pending, setPending] = useState<Record<number, boolean>>({});
+  const [storiesPending, setStoriesPending] = useState(false);
   const [saved, setSaved] = useState<{ id: string; warning?: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -54,6 +54,7 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
     setResult(null);
     setRevealed(0);
     setStories({});
+    setStoriesPending(false);
     setSaved(null);
     setPhase('draft');
   };
@@ -62,8 +63,10 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
     const next = [...picks, id];
     setPicks(next);
     if (next.length === RULES.draft_rounds) {
-      setResult(runGauntlet(seed, side, next, mode));
+      const run = runGauntlet(seed, side, next, mode);
+      setResult(run);
       setPhase('fight');
+      void fetchStories(run, side);
     }
   };
 
@@ -73,40 +76,40 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
     setRerollsLeft((n) => n - 1);
   };
 
-  const narrate = useCallback(
-    async (index: number) => {
-      if (!result) return;
-      const r = result.rounds[index];
-      setPending((p) => ({ ...p, [index]: true }));
+  /** One request for the whole run, fired the moment the ladder is resolved.
+   *  By the time the player clicks past round one the rest are usually in. */
+  const fetchStories = useCallback(
+    async (run: RunResult, chosenSide: Side) => {
+      setStoriesPending(true);
       try {
         const response = await fetch('/api/narrate', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
-            side,
-            round: r,
-            runOver: index === result.rounds.length - 1,
-            fullClear: result.fullClear,
+            side: chosenSide,
+            rounds: run.rounds,
+            fullClear: run.fullClear,
           }),
         });
-        const data = (await response.json()) as { story?: string };
-        setStories((s) => ({ ...s, [index]: data.story ?? '' }));
+        const data = (await response.json()) as { stories?: string[] };
+        const next: Record<number, string> = {};
+        (data.stories ?? []).forEach((story, i) => {
+          next[i] = story;
+        });
+        setStories(next);
       } catch {
-        setStories((s) => ({ ...s, [index]: '' }));
+        setStories({});
       } finally {
-        setPending((p) => ({ ...p, [index]: false }));
+        setStoriesPending(false);
       }
     },
-    [result, side],
+    [],
   );
 
-  // Narration is kicked off by the reveal, not by an effect watching it: the
-  // click already knows which round it is uncovering.
   const advance = () => {
     if (!result) return;
     const next = revealed + 1;
     setRevealed(next);
-    if (stories[next - 1] === undefined) void narrate(next - 1);
     if (next >= result.rounds.length) setPhase('done');
   };
 
@@ -290,7 +293,7 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
             key={`${r.rung}-${r.round}`}
             round={r}
             story={stories[i]}
-            storyState={pending[i] ? 'loading' : 'ready'}
+            storyState={stories[i] === undefined && storiesPending ? 'loading' : 'ready'}
             showBreakdown
           />
         ))}

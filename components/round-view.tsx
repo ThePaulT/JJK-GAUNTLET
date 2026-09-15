@@ -84,6 +84,21 @@ export function RoundView({
         )}
       </div>
 
+      {round.notes.filter((n) => !n.startsWith('UPSET')).length ? (
+        <ul className="flex flex-col gap-1">
+          {round.notes
+            .filter((n) => !n.startsWith('UPSET'))
+            .map((n, i) => (
+              <li
+                key={i}
+                className="border-l-2 border-curse pl-2 text-[11px] leading-relaxed text-ash"
+              >
+                {n}
+              </li>
+            ))}
+        </ul>
+      ) : null}
+
       {fell.length ? (
         <p className="text-xs text-blood">
           {fell.join(' and ')} {fell.length > 1 ? 'are' : 'is'} out of the run.

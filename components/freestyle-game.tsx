@@ -76,7 +76,7 @@ export function FreestyleGame() {
   const [simming, setSimming] = useState(false);
   const [fight, setFight] = useState<FreestyleResult | null>(null);
   const [stories, setStories] = useState<Record<number, string>>({});
-  const [pending, setPending] = useState<Record<number, boolean>>({});
+  const [storiesPending, setStoriesPending] = useState(false);
 
   const ready = a.length > 0 && b.length > 0;
   const preview = useMemo(() => (ready ? explainMatchup(a, b, 'freestyle') : null), [a, b, ready]);
@@ -103,25 +103,27 @@ export function FreestyleGame() {
     const result = runFreestyle(seed, a, b);
     setFight(result);
     setStories({});
-    for (const [index, round] of result.rounds.entries()) {
-      setPending((p) => ({ ...p, [index]: true }));
-      try {
-        const response = await fetch('/api/narrate', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            side: character(a[0]).side,
-            round,
-            runOver: index === result.rounds.length - 1,
-          }),
-        });
-        const data = (await response.json()) as { story?: string };
-        setStories((s) => ({ ...s, [index]: data.story ?? '' }));
-      } catch {
-        setStories((s) => ({ ...s, [index]: '' }));
-      } finally {
-        setPending((p) => ({ ...p, [index]: false }));
-      }
+    setStoriesPending(true);
+    try {
+      const response = await fetch('/api/narrate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          side: character(a[0]).side,
+          rounds: result.rounds,
+          fullClear: result.winner === 'a',
+        }),
+      });
+      const data = (await response.json()) as { stories?: string[] };
+      const next: Record<number, string> = {};
+      (data.stories ?? []).forEach((story, i) => {
+        next[i] = story;
+      });
+      setStories(next);
+    } catch {
+      setStories({});
+    } finally {
+      setStoriesPending(false);
     }
   };
 
@@ -204,7 +206,7 @@ export function FreestyleGame() {
               key={i}
               round={r}
               story={stories[i]}
-              storyState={pending[i] ? 'loading' : 'ready'}
+              storyState={stories[i] === undefined && storiesPending ? 'loading' : 'ready'}
               showBreakdown
             />
           ))}

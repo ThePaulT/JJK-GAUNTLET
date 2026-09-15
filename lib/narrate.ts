@@ -49,6 +49,43 @@ Rules for the prose:
   surprises everyone watching, not as an established fact.`;
 
 /** Everything the DB knows about a fighter that a narrator can use. */
+const RUN_SYSTEM = `You write the fight commentary for a Jujutsu Kaisen fan game.
+
+You are given a WHOLE RUN — every round, already decided by the game engine —
+and you write all of it in one pass, as one continuous fight.
+
+THE RESULTS ARE FACTS. Never change who won a round, who fell, or how it ended.
+Never write a reversal, a survival, or a cliffhanger that undoes a result.
+
+Write ONE PARAGRAPH PER ROUND, 4 to 6 sentences each. Start every paragraph
+with its marker on its own, exactly like <<1>>, then the prose.
+
+THIS IS A FIGHT, NOT A HIGHLIGHT REEL. The hard rules:
+
+- PUSH AND PULL. The enemy is not a training dummy. In every round the enemy
+  lands something, takes something away, or forces a change of plan — even in a
+  round they lose. Give them the first half of the paragraph as often as not.
+  A round the team wins should still cost them.
+- NEVER REINTRODUCE. A domain, technique or transformation that appeared in an
+  earlier round is already established. Do not re-expand it, do not re-explain
+  its sure-hit, do not describe the same barrier twice. Later rounds reference
+  it in passing: it is already up, or it failed last time, or they cannot afford
+  it again.
+- ESCALATE. Damage carries. Someone who bled in round two is still bleeding in
+  round three. Cursed energy runs down. A domain costs its user something every
+  time. By the last round everyone still standing should be wrecked.
+- VARY THE CAMERA. No two paragraphs may open with the same character or the
+  same sentence shape. Do not start consecutive paragraphs with a name. Some
+  rounds open on the enemy, some mid-exchange, some on the aftermath of the
+  last one.
+- SPECIFIC OVER GRAND. Name the technique. Say what it does to a body or to
+  the ground. "Cleaves the asphalt in a fan of thirty cuts" beats "unleashes
+  devastating power".
+
+Plain prose only: no markdown, no asterisks, no headings beyond the <<n>>
+markers, no emoji, no bullets. Never mention rolls, scores, numbers,
+percentages, odds, or the words engine, roll, dice, or simulation.`;
+
 function describe(c: ReturnType<typeof character>): string {
   const lines = [`- ${c.name} (${c.tier} tier${c.canon_grade !== '-' ? `, ${c.canon_grade}` : ''})`];
   lines.push(`  Who they are: ${c.story_hook}`);
@@ -79,6 +116,112 @@ function domainBeat(ids: string[], notes: { rule: string; value: number }[]): st
     (user.domain.sure_hit ? ` — its sure hit is ${user.domain.sure_hit}` : '') +
     '. Put this on the page.'
   );
+}
+
+
+
+/** Canon context the DB assumes you already know. Attached to a beat when the
+ *  engine fires the matching special, so the narration gets the details right
+ *  rather than inventing them. */
+const LORE: Record<string, string> = {
+  Mahoraga:
+    'Ten Shadows canon: Mahoraga — Eight-Handled Sword Divergent Sila Divine General ' +
+    'Mahoraga — has never been subjugated by any user of the technique in its history. ' +
+    'Summoning it is a ritual and a last resort, spoken aloud, and a user who cannot tame ' +
+    'it is killed by it. The wheel above its head turns to adapt to any phenomenon it has ' +
+    'already experienced: a technique, a domain, even Infinity. It has no loyalty here. ' +
+    'Megumi calls it knowing it will finish him, and it does. Write the incantation, the ' +
+    'wheel turning, and the fact that this is the last thing he ever does.',
+  'spare core':
+    "Panda is a Cursed Corpse with three cores, not one. The body breaking is not the end " +
+    'of him; he switches to the gorilla core and keeps going.',
+  'Black Flash':
+    'Black Flash is cursed energy landing within a hundredth of a second of the physical ' +
+    'hit, warping space at the point of impact in black and red. Sorcerers chase the feeling ' +
+    'for the rest of their lives.',
+  jackpot:
+    "Hakari's Idle Death Gamble pays out in a pachinko jackpot: unlimited cursed energy and " +
+    'automatic reversed cursed technique for four minutes and eleven seconds. While it runs, ' +
+    'nothing put him down.',
+  'black hole':
+    "Yuki's Star Rage adds virtual mass. Her last move collapses that mass into a black hole, " +
+    'and she does not walk away from using it.',
+  Amber:
+    "Kashimo's Mythical Beast Amber is a one-time transformation that burns his body out.",
+};
+
+function loreFor(text: string): string | null {
+  for (const [key, note] of Object.entries(LORE)) {
+    if (text.includes(key)) return note;
+  }
+  return null;
+}
+
+/** One round, compressed to the facts a narrator needs. */
+function roundBrief(round: RoundResult, index: number): string {
+  const enemies = round.enemyIds.map((id) => character(id).name).join(' and ');
+  const lines = [
+    `<<${index + 1}>> Round ${round.round}${round.rung >= 0 ? `, rung ${round.rung + 1}` : ''} — against ${enemies}.`,
+    `  Standing for the team: ${round.teamIds.map((id) => character(id).name).join(', ')}.`,
+    round.won
+      ? `  RESULT: the team WINS. ${enemies} goes down.`
+      : `  RESULT: the team LOSES. ${enemies} is still standing.`,
+  ];
+
+  const beats: string[] = [];
+  const ourDomain = domainBeat(round.teamIds, round.team.domainNotes);
+  const theirDomain = domainBeat(round.enemyIds, round.enemy.domainNotes);
+  if (ourDomain) beats.push(ourDomain);
+  if (theirDomain) beats.push(`Against them: ${theirDomain}`);
+  for (const note of [...round.team.domainNotes, ...round.enemy.domainNotes]) {
+    if (note.rule === 'zero_ce_immunity') {
+      beats.push('A zero-cursed-energy fighter cannot be targeted by that closed domain.');
+    }
+    if (note.rule === 'anti_domain') beats.push('Simple Domain holds the sure hit off.');
+    if (note.rule === 'open_domain_exception') {
+      beats.push('That domain is barrierless — no walls, and it cuts everything in range.');
+    }
+  }
+  if (round.team.blackFlash > 0) beats.push('BLACK FLASH lands for the team. Biggest beat of the round.');
+  if (round.enemy.blackFlash > 0) beats.push('BLACK FLASH lands for the enemy.');
+  for (const c of round.team.firedCounters) {
+    beats.push(
+      `${c.explanation}${c.canon_status === 'fan_theory' ? ' (fan theory — write it as a shock)' : ''}`,
+    );
+  }
+  for (const c of round.enemy.firedCounters) beats.push(`Working against the team: ${c.explanation}`);
+  for (const sy of round.team.firedSynergies) {
+    beats.push(sy.bonus < 0 ? `${sy.label}: they will not cooperate. ${sy.explanation}` : `${sy.label}: ${sy.explanation}`);
+  }
+  for (const note of round.notes) {
+    if (note.startsWith('UPSET')) continue;
+    const clean = note.replace(/\s*\([+-]?\d+(?:\s[a-z]+)?\)/g, '').trim();
+    beats.push(clean);
+    const lore = loreFor(clean);
+    if (lore) beats.push(`  CONTEXT: ${lore}`);
+  }
+  if (round.team.blackFlash > 0) {
+    const lore = loreFor('Black Flash');
+    if (lore) beats.push(`  CONTEXT: ${lore}`);
+  }
+  if (round.upset && round.upsetReason) {
+    const reason = round.upsetReason.replace(/^UPSET — /, '');
+    beats.push(
+      round.upsetSide === 'team'
+        ? `THE UPSET: they were losing this and steal it anyway. ${reason}`
+        : `THE UPSET: they were ahead and lose it anyway. ${reason}`,
+    );
+  }
+  if (round.narrowWin && round.won) beats.push('Won by a hair. It should feel that way.');
+  if (round.fellIds.length) {
+    beats.push(`OUT OF THE RUN: ${round.fellIds.map((id) => character(id).name).join(', ')}. Show how.`);
+  }
+  if (round.enemyFellIds.length) {
+    beats.push(`Also down: ${round.enemyFellIds.map((id) => character(id).name).join(', ')}.`);
+  }
+
+  if (beats.length) lines.push(...beats.map((b) => `  - ${b}`));
+  return lines.join('\n');
 }
 
 function brief(req: NarrationRequest): string {
@@ -163,7 +306,10 @@ function brief(req: NarrationRequest): string {
   // Specials the engine actually fired, described in the DB's own words.
   for (const note of round.notes) {
     if (note.startsWith('UPSET')) continue;
-    beats.push(note.replace(/\s*\([+-]?\d+(?:\s[a-z]+)?\)/g, '').trim());
+    const clean = note.replace(/\s*\([+-]?\d+(?:\s[a-z]+)?\)/g, '').trim();
+    beats.push(clean);
+    const lore = loreFor(clean);
+    if (lore) beats.push(`CONTEXT: ${lore}`);
   }
   for (const c of team) {
     if (c.special && round.team.specialNotes.some((n) => n.startsWith(c.name))) {
@@ -291,10 +437,14 @@ export function cleanStory(text: string): string {
 
 const GEMINI_HOST = 'https://generativelanguage.googleapis.com/v1beta/models';
 
-/** Google AI Studio's free tier covers the Flash models. Override with
- *  GEMINI_MODEL if Google renames or retires this one — though when it does,
- *  the 404 names the replacement and `narrateWithGemini` follows it. */
-const DEFAULT_GEMINI_MODEL = 'gemini-3.6-flash';
+/**
+ * The free tier meters requests per day PER MODEL, and the allowance is small —
+ * gemini-3.6-flash reports a quota of 20 a day. Quotas are separate per model,
+ * so exhausting one is not the end of the story: this chain is tried in order,
+ * and a daily-quota 429 moves to the next rather than dropping the run to the
+ * template. Set GEMINI_MODEL to put your own choice at the front.
+ */
+const GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.6-flash'];
 
 interface GeminiResponse {
   candidates?: {
@@ -305,19 +455,27 @@ interface GeminiResponse {
   error?: { message?: string; status?: string };
 }
 
-async function narrateWithGemini(system: string, userBrief: string): Promise<string | null> {
+async function narrateWithGemini(
+  system: string,
+  userBrief: string,
+  maxOutputTokens = 1100,
+): Promise<string | null> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
-  const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+
+  const preferred = process.env.GEMINI_MODEL;
+  const chain = preferred
+    ? [preferred, ...GEMINI_MODELS.filter((m) => m !== preferred)]
+    : [...GEMINI_MODELS];
 
   const body = (withThinkingOff: boolean) => ({
     system_instruction: { parts: [{ text: system }] },
     contents: [{ role: 'user', parts: [{ text: userBrief }] }],
     generationConfig: {
-      maxOutputTokens: 2048,
+      maxOutputTokens,
       temperature: 1,
-      // Flash models think by default, and thinking tokens come out of the
-      // same budget. A 3-4 sentence narration does not need it.
+      // Flash models think by default and thinking comes out of the same
+      // budget. A few paragraphs of narration do not need it.
       ...(withThinkingOff ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
     },
   });
@@ -329,94 +487,88 @@ async function narrateWithGemini(system: string, userBrief: string): Promise<str
       body: JSON.stringify(body(withThinkingOff)),
     });
 
-  let used = model;
-  let response = await send(used, true);
-  let data = (await response.json()) as GeminiResponse;
+  for (const [attempt, model] of chain.entries()) {
+    let used = model;
+    let response = await send(used, true);
+    let data = (await response.json()) as GeminiResponse;
 
-  // A model that does not accept thinkingConfig rejects the whole request.
-  // Retry once without it — but only for that, not for a bad key, which is
-  // also a 400.
-  if (!response.ok && /thinking/i.test(data.error?.message ?? '')) {
-    response = await send(used, false);
-    data = (await response.json()) as GeminiResponse;
-  }
-
-  // Free-tier quota is per-minute as well as per-day, and a burst of rounds can
-  // trip it. Google returns the delay it wants in the error body; wait that
-  // long once rather than dropping the round to the template.
-  if (response.status === 429) {
-    const seconds = Number(
-      /retryDelay"?\s*:\s*"?(\d+(?:\.\d+)?)s/i.exec(JSON.stringify(data))?.[1] ?? 6,
-    );
-    const wait = Math.min(Math.max(seconds, 1), 12) * 1000;
-    console.error(`narration: Gemini rate limit; retrying once in ${wait / 1000}s`);
-    await new Promise((resolve) => setTimeout(resolve, wait));
-    response = await send(used, true);
-    data = (await response.json()) as GeminiResponse;
-    if (response.status === 429) {
-      console.error(
-        'narration: still rate limited — this round falls back to the local narrator. ' +
-          'Free tier allows roughly 15 requests a minute.',
-      );
-    }
-  }
-
-  // Google retires models, and says so in the 404: "This model models/X is no
-  // longer available to new users. Please update your code to use models/Y".
-  // Follow the pointer once rather than leaving every round on the template.
-  if (!response.ok) {
-    const replacement = /use\s+models\/([\w.-]+)/i.exec(data.error?.message ?? '')?.[1];
-    if (replacement && replacement !== used) {
-      console.error(
-        `narration: ${used} is retired; Google points at ${replacement}. ` +
-          `Using it for now — set GEMINI_MODEL=${replacement} to make it permanent.`,
-      );
-      used = replacement;
-      response = await send(used, true);
+    // Some models reject thinkingConfig outright; retry once without it.
+    if (!response.ok && /thinking/i.test(data.error?.message ?? '')) {
+      response = await send(used, false);
       data = (await response.json()) as GeminiResponse;
-      if (!response.ok && /thinking/i.test(data.error?.message ?? '')) {
-        response = await send(used, false);
+    }
+
+    // Google retires models and names the replacement in the 404.
+    if (!response.ok) {
+      const replacement = /use\s+models\/([\w.-]+)/i.exec(data.error?.message ?? '')?.[1];
+      if (replacement && replacement !== used) {
+        console.error(`narration: ${used} is retired; following Google's pointer to ${replacement}.`);
+        used = replacement;
+        response = await send(used, true);
         data = (await response.json()) as GeminiResponse;
       }
     }
-  }
 
-  if (!response.ok) {
-    const message = data.error?.message ?? 'unknown error';
-    console.error(`narration: Gemini ${response.status} (${used}): ${message}`);
-    if (/API key not valid|API_KEY_INVALID/i.test(message)) {
-      console.error('narration: check GEMINI_API_KEY in .env.local');
-    } else if (response.status === 404 || /not found|not supported/i.test(message)) {
-      console.error(
-        `narration: "${used}" is not available to this key. Set GEMINI_MODEL to one listed by ` +
-          'https://generativelanguage.googleapis.com/v1beta/models?key=YOUR_KEY',
-      );
+    if (response.status === 429) {
+      const perDay = JSON.stringify(data).includes('PerDay');
+      const last = attempt === chain.length - 1;
+      if (perDay) {
+        console.error(
+          `narration: ${used} is out of free-tier requests for today` +
+            (last ? '.' : `; trying ${chain[attempt + 1]}.`),
+        );
+        continue;
+      }
+      // A per-minute limit is worth waiting out once.
+      const seconds = Number(/retryDelay"?\s*:\s*"?(\d+(?:\.\d+)?)s/i.exec(JSON.stringify(data))?.[1] ?? 6);
+      const wait = Math.min(Math.max(seconds, 1), 12) * 1000;
+      console.error(`narration: ${used} rate limited; retrying once in ${wait / 1000}s`);
+      await new Promise((resolve) => setTimeout(resolve, wait));
+      response = await send(used, true);
+      data = (await response.json()) as GeminiResponse;
+      if (response.status === 429 && !last) continue;
     }
-    return null;
-  }
-  if (data.promptFeedback?.blockReason) {
-    console.error(`narration: Gemini blocked the prompt (${data.promptFeedback.blockReason})`);
-    return null;
+
+    if (!response.ok) {
+      const message = data.error?.message ?? 'unknown error';
+      console.error(`narration: Gemini ${response.status} (${used}): ${message}`);
+      if (/API key not valid|API_KEY_INVALID/i.test(message)) {
+        console.error('narration: check GEMINI_API_KEY');
+        return null; // A bad key fails on every model; no point walking the chain.
+      }
+      continue;
+    }
+
+    if (data.promptFeedback?.blockReason) {
+      console.error(`narration: Gemini blocked the prompt (${data.promptFeedback.blockReason})`);
+      return null;
+    }
+
+    const candidate = data.candidates?.[0];
+    if (candidate?.finishReason && !['STOP', 'MAX_TOKENS'].includes(candidate.finishReason)) {
+      console.error(`narration: Gemini stopped early (${candidate.finishReason})`);
+      continue;
+    }
+
+    const text = cleanStory((candidate?.content?.parts ?? []).map((part) => part.text ?? '').join(''));
+    if (text) return text;
   }
 
-  const candidate = data.candidates?.[0];
-  if (candidate?.finishReason && !['STOP', 'MAX_TOKENS'].includes(candidate.finishReason)) {
-    console.error(`narration: Gemini stopped early (${candidate.finishReason})`);
-    return null;
-  }
-
-  const text = cleanStory((candidate?.content?.parts ?? []).map((part) => part.text ?? '').join(''));
-  return text || null;
+  return null;
 }
 
-async function narrateWithClaude(system: string, userBrief: string): Promise<string | null> {
+async function narrateWithClaude(
+  system: string,
+  userBrief: string,
+  maxTokens = 1000,
+): Promise<string | null> {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
   const client = new Anthropic();
 
   try {
     const response = await client.messages.create({
       model: 'claude-opus-5',
-      max_tokens: 1000,
+      max_tokens: maxTokens,
       system,
       // Narration is a short, well-specified writing task: low effort keeps it
       // fast and cheap without turning thinking off.
@@ -443,6 +595,107 @@ async function narrateWithClaude(system: string, userBrief: string): Promise<str
     }
     return null;
   }
+}
+
+export interface RunNarrationRequest {
+  side: Side;
+  rounds: RoundResult[];
+  fullClear: boolean;
+}
+
+/** Split the model's single answer back into one story per round. */
+export function splitRunStories(text: string, count: number): (string | null)[] {
+  const out: (string | null)[] = Array.from({ length: count }, () => null);
+  // Markers look like <<3>>; tolerate the model dropping the angle brackets.
+  const pattern = /(?:<<|\[\[)\s*(\d+)\s*(?:>>|\]\])/g;
+  const marks: { index: number; at: number; end: number }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = pattern.exec(text))) {
+    marks.push({ index: Number(m[1]) - 1, at: m.index, end: m.index + m[0].length });
+  }
+  for (const [i, mark] of marks.entries()) {
+    if (mark.index < 0 || mark.index >= count) continue;
+    const body = text.slice(mark.end, marks[i + 1]?.at ?? text.length);
+    const cleaned = cleanStory(body);
+    if (cleaned) out[mark.index] = cleaned;
+  }
+  return out;
+}
+
+function runBrief(req: RunNarrationRequest): string {
+  const cast = new Map<string, ReturnType<typeof character>>();
+  for (const round of req.rounds) {
+    for (const id of [...round.teamIds, ...round.enemyIds]) cast.set(id, character(id));
+  }
+  return [
+    `Side: ${req.side === 'hero' ? 'sorcerers' : 'curses and killers'}.`,
+    `${req.rounds.length} rounds, written as one continuous fight.`,
+    '',
+    'EVERYONE INVOLVED',
+    ...[...cast.values()].map(describe),
+    '',
+    'THE ROUNDS',
+    ...req.rounds.map((r, i) => roundBrief(r, i)),
+    '',
+    req.fullClear
+      ? 'The team clears the entire ladder. The last paragraph lands that.'
+      : 'The team is wiped out in the last round. The last paragraph lands that.',
+    '',
+    `Write exactly ${req.rounds.length} paragraphs, each starting with its <<n>> marker.`,
+  ].join('\n');
+}
+
+/**
+ * Narrate a whole run in one request.
+ *
+ * One call instead of one per round: the free tier's per-minute quota cannot
+ * keep up with a fast clicker, and — more importantly — a model that can only
+ * see one round re-expands the same domain every time. Seeing the whole fight
+ * is what lets it vary the camera, carry damage forward, and let the enemy
+ * push back.
+ */
+export async function narrateRun(req: RunNarrationRequest): Promise<{
+  stories: string[];
+  source: NarrationSource;
+}> {
+  const fallback = (i: number) =>
+    fallbackNarration({
+      side: req.side,
+      round: req.rounds[i],
+      runOver: i === req.rounds.length - 1,
+      fullClear: req.fullClear,
+    });
+
+  const provider = activeProvider();
+  if (provider === 'fallback' || req.rounds.length === 0) {
+    return { stories: req.rounds.map((_, i) => fallback(i)), source: 'fallback' };
+  }
+
+  let raw: string | null = null;
+  try {
+    const userBrief = runBrief(req);
+    raw =
+      provider === 'gemini'
+        // Sized to the job: seven paragraphs of six sentences is well under
+        // 1,600 tokens. The free tier meters tokens per minute and counts
+        // maxOutputTokens as a reservation, so asking for headroom you never
+        // use is what trips the limit.
+        ? await narrateWithGemini(RUN_SYSTEM, userBrief, 1600)
+        : await narrateWithClaude(RUN_SYSTEM, userBrief, 2000);
+  } catch (error) {
+    console.error('run narration failed', error);
+  }
+
+  if (!raw) return { stories: req.rounds.map((_, i) => fallback(i)), source: 'fallback' };
+
+  const split = splitRunStories(raw, req.rounds.length);
+  const missing = split.filter((s) => !s).length;
+  if (missing) console.error(`narration: ${missing} of ${req.rounds.length} rounds came back unparsed`);
+
+  return {
+    stories: split.map((story, i) => story ?? fallback(i)),
+    source: missing === req.rounds.length ? 'fallback' : provider,
+  };
 }
 
 export async function narrateRound(req: NarrationRequest): Promise<{

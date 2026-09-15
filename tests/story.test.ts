@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { character } from '@/lib/data.ts';
 import { runGauntlet } from '@/lib/engine.ts';
-import { cleanStory, fallbackNarration } from '@/lib/narrate.ts';
+import { cleanStory, fallbackNarration, splitRunStories } from '@/lib/narrate.ts';
 import { bestStoryLine, cardFacts, shareText } from '@/lib/share.ts';
 import type { SavedRun } from '@/lib/share.ts';
 
@@ -102,5 +102,44 @@ describe('story cleanup', () => {
     expect(cleanStory(prose)).toBe(prose);
     // Snake_case tags and mid-word underscores are not emphasis.
     expect(cleanStory('The soul_strike lands.')).toBe('The soul_strike lands.');
+  });
+});
+
+describe('run narration parsing', () => {
+  it('splits one answer into a story per round', () => {
+    const answer = [
+      '<<1>> Hanami opens on the front foot, roots tearing the asphalt.',
+      '<<2>> Jogo takes the second exchange and makes them pay for it.',
+      '<<3>> By the third, nobody is standing up straight.',
+    ].join('\n\n');
+    const out = splitRunStories(answer, 3);
+    expect(out).toHaveLength(3);
+    expect(out[0]).toContain('Hanami opens');
+    expect(out[1]).toContain('Jogo takes');
+    expect(out[2]).toContain('nobody is standing');
+  });
+
+  it('tolerates square-bracket markers and stray prose before the first one', () => {
+    const out = splitRunStories('Here is the fight.\n[[1]] Round one.\n[[2]] Round two.', 2);
+    expect(out[0]).toBe('Round one.');
+    expect(out[1]).toBe('Round two.');
+  });
+
+  it('leaves a missing round null rather than shifting the rest', () => {
+    const out = splitRunStories('<<1>> One.\n<<3>> Three.', 3);
+    expect(out[0]).toBe('One.');
+    expect(out[1]).toBeNull();
+    expect(out[2]).toBe('Three.');
+  });
+
+  it('ignores markers outside the round count', () => {
+    const out = splitRunStories('<<1>> One.\n<<9>> Nine.', 1);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toBe('One.');
+  });
+
+  it('strips markdown inside each round', () => {
+    const out = splitRunStories('<<1>> He fires **Piercing Blood** clean through.', 1);
+    expect(out[0]).toBe('He fires Piercing Blood clean through.');
   });
 });
