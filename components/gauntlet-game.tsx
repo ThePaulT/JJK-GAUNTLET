@@ -10,6 +10,7 @@ import { runGauntlet } from '@/lib/engine.ts';
 import { randomSeed } from '@/lib/rng.ts';
 import type { Mode, Side } from '@/lib/types.ts';
 
+import { BattleTheater } from './battle-theater.tsx';
 import { CharacterCard } from './character-card.tsx';
 import { Portrait } from './portrait.tsx';
 import { RoundView } from './round-view.tsx';
@@ -33,7 +34,6 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
   const [rerolls, setRerolls] = useState<Record<number, number>>({});
   const [rerollsLeft, setRerollsLeft] = useState(RULES.rerolls_per_run);
   const [result, setResult] = useState<RunResult | null>(null);
-  const [revealed, setRevealed] = useState(0);
   const [stories, setStories] = useState<Record<number, string>>({});
   const [storiesPending, setStoriesPending] = useState(false);
   const [saved, setSaved] = useState<{ id: string; warning?: string } | null>(null);
@@ -52,7 +52,6 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
     setRerolls({});
     setRerollsLeft(RULES.rerolls_per_run);
     setResult(null);
-    setRevealed(0);
     setStories({});
     setStoriesPending(false);
     setSaved(null);
@@ -105,13 +104,6 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
     },
     [],
   );
-
-  const advance = () => {
-    if (!result) return;
-    const next = revealed + 1;
-    setRevealed(next);
-    if (next >= result.rounds.length) setPhase('done');
-  };
 
   const save = async () => {
     if (!result) return;
@@ -226,7 +218,6 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
   if (!result) return null;
 
   const ladder = DB.ladders[side];
-  const shown = result.rounds.slice(0, revealed);
 
   return (
     <div className="flex flex-col gap-6">
@@ -242,7 +233,7 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
                   id={id}
                   size={34}
                   className={`border border-sand ${
-                    result.survivorIds.length && !result.survivorIds.includes(id) && phase === 'done'
+                    !result.survivorIds.includes(id) && phase === 'done'
                       ? 'opacity-30'
                       : ''
                   }`}
@@ -252,58 +243,9 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
             ))}
           </div>
         </div>
-        <div className="flex gap-1">
-          {ladder.rungs.map((id, i) => {
-            const state =
-              i < result.rungsCleared && i < revealed
-                ? 'done'
-                : shown.some((r) => r.rung === i)
-                  ? 'live'
-                  : 'pending';
-            return (
-              <span
-                key={id}
-                title={character(id).name}
-                className={[
-                  'h-2 w-8',
-                  state === 'done' ? 'bg-curse' : state === 'live' ? 'bg-blood' : 'bg-sand',
-                ].join(' ')}
-              />
-            );
-          })}
-        </div>
       </header>
 
-      {revealed === 0 ? (
-        <div className="panel flex flex-col items-start gap-4 p-6">
-          <p className="max-w-xl text-sm leading-relaxed text-ash">
-            Five rungs, ending at {character(ladder.final_boss).name}. Lose one and somebody is
-            carried out; the rung is worn down by {RULES.loss_opponent_weaken} and you go again.
-            When nobody is left standing, the run is over.
-          </p>
-          <button className="btn btn-primary" type="button" onClick={advance}>
-            Begin
-          </button>
-        </div>
-      ) : null}
-
-      <div className="flex flex-col gap-4">
-        {shown.map((r, i) => (
-          <RoundView
-            key={`${r.rung}-${r.round}`}
-            round={r}
-            story={stories[i]}
-            storyState={stories[i] === undefined && storiesPending ? 'loading' : 'ready'}
-            showBreakdown
-          />
-        ))}
-      </div>
-
-      {phase === 'fight' && revealed > 0 ? (
-        <button className="btn btn-primary self-start" type="button" onClick={advance}>
-          {revealed >= result.rounds.length - 1 ? 'See how it ends' : 'Next round'}
-        </button>
-      ) : null}
+      {phase === 'fight' ? <BattleTheater key={seed} run={result} stories={stories} onComplete={() => setPhase('done')} /> : null}
 
       {phase === 'done' ? (
         <section className="panel flex flex-col gap-5 p-6">
@@ -319,6 +261,15 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
               {result.upsets > 0 ? <span className="stamp stamp-press text-blood">Upset</span> : null}
               {result.hype ? <span className="stamp text-curse">Hype</span> : null}
             </div>
+          </div>
+
+          <p className="text-sm text-ash">{result.rungsCleared} / {ladder.rungs.length} bosses defeated{!result.fullClear ? ` · Stopped by ${result.rounds.at(-1)?.enemyLabel}` : ' · The entire ladder is yours.'}</p>
+          <div className="grid grid-cols-3 gap-3">
+            {picks.map((id) => <div key={id} className="min-w-0">
+              <Portrait id={id} className={`aspect-square w-full ${result.survivorIds.includes(id) ? '' : 'grayscale opacity-50'}`} />
+              <p className="mt-2 text-xs">{character(id).name}</p>
+              <span className="eyebrow">{result.mvpId === id ? 'MVP · ' : ''}{result.survivorIds.includes(id) ? 'Standing' : 'Fallen'}</span>
+            </div>)}
           </div>
 
           <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs sm:grid-cols-4">
@@ -378,6 +329,10 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
             </button>
           </div>
           {saved?.warning ? <p className="text-[11px] text-blood">{saved.warning}</p> : null}
+          <details className="border-t border-sand pt-4">
+            <summary className="cursor-pointer text-sm">Review the full run</summary>
+            <div className="mt-4 flex flex-col gap-4">{result.rounds.map((r, i) => <RoundView key={i} round={r} story={stories[i]} storyState={stories[i] === undefined && storiesPending ? 'loading' : 'ready'} showBreakdown />)}</div>
+          </details>
         </section>
       ) : null}
     </div>
