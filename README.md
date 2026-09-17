@@ -27,9 +27,10 @@ Neither environment variable is required to play. See `.env.example`.
 
 ### Deploying to Vercel
 
-This app lives in a subdirectory of the repository, so set the project's **Root
-Directory** to `jjk-gauntlet`. Add both environment variables. Any Postgres with
-a free tier works for `DATABASE_URL`; the `runs` table is created on first use.
+The Next.js app is at this repository's root, so leave Vercel's **Root
+Directory** at the repository root. Set `DATABASE_URL` for durable saved runs.
+Optionally set `GEMINI_API_KEY` or `ANTHROPIC_API_KEY` for AI narration; without
+either key, local narration still works. The `runs` table is created on first use.
 
 ## The three modes
 
