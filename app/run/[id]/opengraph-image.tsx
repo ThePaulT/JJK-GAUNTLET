@@ -1,6 +1,8 @@
+import { headers } from 'next/headers';
 import { ImageResponse } from 'next/og';
 
 import { ResultCard } from '@/lib/card.tsx';
+import { portraitUrls } from '@/lib/portrait-url.ts';
 import { cardFacts } from '@/lib/share.ts';
 import { getStore } from '@/lib/store.ts';
 
@@ -35,6 +37,11 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     );
   }
 
+  const headerList = await headers();
+  const host = headerList.get('host') ?? '';
+  const protocol = host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https';
+  const teamImages = host ? await portraitUrls(`${protocol}://${host}`, run.teamIds) : [];
+
   return new ImageResponse(
     (
       <ResultCard
@@ -43,6 +50,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         height={size.height}
         url={`/run/${id}`}
         fullClear={run.result.fullClear}
+        teamImages={teamImages}
       />
     ),
     size,

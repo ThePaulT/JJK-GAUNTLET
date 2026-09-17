@@ -19,6 +19,9 @@ interface CardProps extends CardFacts {
   height: number;
   url: string;
   fullClear: boolean;
+  /** Absolute URLs for the squad's portraits, same order as teamNames. A null
+   *  entry means that character has no installed art and is drawn as a plate. */
+  teamImages?: (string | null)[];
 }
 
 function Stamp({ label, color, rotate }: { label: string; color: string; rotate: number }) {
@@ -56,6 +59,7 @@ export function ResultCard(props: CardProps) {
     rungs,
     url,
     fullClear,
+    teamImages = [],
   } = props;
   const vertical = height > width;
   const scale = vertical ? 1 : 0.62;
@@ -94,14 +98,14 @@ export function ResultCard(props: CardProps) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', marginTop: px(56) }}>
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: vertical ? px(56) : 18 }}>
           <div style={{ display: 'flex', fontSize: px(28), letterSpacing: px(6), color: ASH }}>
             {fullClear ? 'RESULT' : 'RECORD'}
           </div>
           <div
             style={{
               display: 'flex',
-              fontSize: px(fullClear ? 130 : 190),
+              fontSize: vertical ? px(fullClear ? 130 : 190) : fullClear ? 76 : 104,
               fontWeight: 700,
               lineHeight: 1,
               color: fullClear ? accent : BONE,
@@ -110,7 +114,14 @@ export function ResultCard(props: CardProps) {
           >
             {fullClear ? 'FULL CLEAR' : record}
           </div>
-          <div style={{ display: 'flex', fontSize: px(46), marginTop: px(16), color: BONE }}>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: vertical ? px(46) : 32,
+              marginTop: px(16),
+              color: BONE,
+            }}
+          >
             {rankTitle}
           </div>
           {!fullClear && lostAt ? (
@@ -122,72 +133,50 @@ export function ResultCard(props: CardProps) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div
-          style={{
-            display: 'flex',
-            fontSize: px(24),
-            letterSpacing: px(5),
-            color: ASH,
-            marginTop: px(vertical ? 0 : 26),
-          }}
-        >
-          THE LADDER
-        </div>
         {vertical ? (
-          <div style={{ display: 'flex', flexDirection: 'column', marginTop: px(16) }}>
-            {rungs.map((rung, i) => (
-              <div
-                key={rung.name}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderTop: `1px solid ${ASH}`,
-                  padding: `${px(14)}px 0`,
-                  color: rung.cleared ? BONE : ASH,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', width: px(60), fontSize: px(26), color: ASH }}>
-                    {i + 1}
-                  </div>
-                  <div style={{ display: 'flex', fontSize: px(36) }}>{rung.name}</div>
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div
+              style={{ display: 'flex', fontSize: px(24), letterSpacing: px(5), color: ASH }}
+            >
+              THE LADDER
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', marginTop: px(16) }}>
+              {rungs.map((rung, i) => (
                 <div
+                  key={rung.name}
                   style={{
                     display: 'flex',
-                    fontSize: px(24),
-                    letterSpacing: px(3),
-                    color: rung.cleared ? accent : BLOOD,
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderTop: `1px solid ${ASH}`,
+                    padding: `${px(14)}px 0`,
+                    color: rung.cleared ? BONE : ASH,
                   }}
                 >
-                  {rung.cleared ? 'CLEARED' : 'HELD'}
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', width: px(60), fontSize: px(26), color: ASH }}>
+                      {i + 1}
+                    </div>
+                    <div style={{ display: 'flex', fontSize: px(36), paddingRight: px(24) }}>
+                      {rung.name}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      fontSize: px(24),
+                      letterSpacing: px(3),
+                      color: rung.cleared ? accent : BLOOD,
+                    }}
+                  >
+                    {rung.cleared ? 'CLEARED' : 'HELD'}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        ) : (
-          // 1200x630 has no room for five rows: one bar of five cells instead.
-          <div style={{ display: 'flex', marginTop: px(14) }}>
-            {rungs.map((rung) => (
-              <div
-                key={rung.name}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  marginRight: px(14),
-                  borderTop: `${px(8)}px solid ${rung.cleared ? accent : BLOOD}`,
-                  paddingTop: px(8),
-                  width: px(210),
-                  fontSize: px(26),
-                  color: rung.cleared ? BONE : ASH,
-                }}
-              >
-                {rung.name}
-              </div>
-            ))}
-          </div>
-        )}
+        ) : null}
+
         {bestLine ? (
           <div
             style={{
@@ -216,24 +205,58 @@ export function ResultCard(props: CardProps) {
           <div style={{ display: 'flex', fontSize: px(24), letterSpacing: px(5), color: ASH }}>
             SQUAD
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', marginTop: px(10) }}>
-            {teamNames.map((name) => (
-              <div
-                key={name}
-                style={{
-                  display: 'flex',
-                  fontSize: px(34),
-                  border: `1px solid ${ASH}`,
-                  padding: `${px(8)}px ${px(16)}px`,
-                  marginRight: px(12),
-                  marginTop: px(10),
-                }}
-              >
-                {name}
-              </div>
-            ))}
+          <div style={{ display: 'flex', marginTop: px(14) }}>
+            {teamNames.map((name, i) => {
+              const image = teamImages[i];
+              const isMvp = name === mvpName;
+              const side = vertical ? px(190) : 76;
+              return (
+                <div
+                  key={name}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    marginRight: vertical ? px(16) : 10,
+                    border: `${isMvp ? 3 : 1}px solid ${isMvp ? accent : ASH}`,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      width: side,
+                      height: side,
+                      alignItems: 'flex-end',
+                      justifyContent: 'center',
+                      background: '#151516',
+                    }}
+                  >
+                    {image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={image} width={side} height={side} alt="" style={{ objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ display: 'flex', fontSize: px(64), color: ASH }}>
+                        {name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      width: side,
+                      padding: `${px(6)}px ${px(8)}px`,
+                      fontSize: vertical ? px(22) : 15,
+                      color: isMvp ? accent : BONE,
+                      background: INK,
+                    }}
+                  >
+                    {name.length > 14 ? `${name.slice(0, 13)}…` : name}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
+
         <div
           style={{
             display: 'flex',

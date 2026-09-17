@@ -11,6 +11,7 @@ import type { WinOdds } from '@/lib/sim.ts';
 
 import { BreakdownPanel } from './breakdown-panel.tsx';
 import { CharacterCard } from './character-card.tsx';
+import { Portrait } from './portrait.tsx';
 import { RoundView } from './round-view.tsx';
 
 const FIGHTS = 2000;
@@ -52,12 +53,13 @@ function Roster({
               onClick={() => onToggle(c.id)}
               disabled={!picked && chosen.length >= MAX_PER_SIDE}
               className={[
-                'flex items-baseline justify-between border px-3 py-1.5 text-left text-xs',
+                'flex items-center gap-2 border py-1 pr-3 pl-1 text-left text-xs',
                 picked ? 'border-bone bg-panel-2' : 'border-sand hover:border-ash',
                 !picked && chosen.length >= MAX_PER_SIDE ? 'opacity-30' : 'cursor-pointer',
               ].join(' ')}
             >
-              <span>{c.name}</span>
+              <Portrait id={c.id} size={26} className="shrink-0" />
+              <span className="flex-1">{c.name}</span>
               <span className={c.side === 'hero' ? 'text-curse' : 'text-blood'}>
                 {c.tier} · {c.power}
               </span>
