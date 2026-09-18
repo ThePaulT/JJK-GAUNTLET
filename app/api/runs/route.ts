@@ -4,8 +4,11 @@ import { runGauntlet } from '@/lib/engine.ts';
 import { getStore, newRunId } from '@/lib/store.ts';
 import type { SavedRun } from '@/lib/share.ts';
 import type { Mode, Side } from '@/lib/types.ts';
+import { runPilot } from '@/lib/pilot.ts';
+import { PILOT_RULESET } from '@/lib/pilot-data.ts';
 
 interface Body {
+  ruleset?: string;
   mode: Mode;
   side: Side;
   seed: string;
@@ -37,9 +40,11 @@ export async function POST(request: Request) {
   // own result, so a shared link can never show a run the engine did not make.
   let result;
   try {
-    result = runGauntlet(seed, side, teamIds, mode === 'daily' ? 'daily' : 'gauntlet');
+    if (body.ruleset && body.ruleset !== PILOT_RULESET) throw new Error('Unknown ruleset');
+    if (body.ruleset === PILOT_RULESET && (side !== 'hero' || mode !== 'gauntlet')) throw new Error('Invalid pilot mode');
+    result = body.ruleset === PILOT_RULESET ? runPilot(seed, teamIds) : runGauntlet(seed, side, teamIds, mode === 'daily' ? 'daily' : 'gauntlet');
   } catch {
-    return NextResponse.json({ error: 'Unknown character in team.' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid team or combat ruleset.' }, { status: 400 });
   }
 
   const store = getStore();
@@ -51,7 +56,7 @@ export async function POST(request: Request) {
     seed,
     teamIds,
     result,
-    stories: (body.stories ?? []).slice(0, result.rounds.length).map((s) => String(s).slice(0, 2000)),
+    stories: body.ruleset === PILOT_RULESET ? result.rounds.map(r => r.combat!.paragraphs.join('\n\n')) : (body.stories ?? []).slice(0, result.rounds.length).map((s) => String(s).slice(0, 2000)),
   };
 
   await store.save(run);

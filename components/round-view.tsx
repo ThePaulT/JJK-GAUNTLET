@@ -5,6 +5,7 @@ import type { RoundResult } from '@/lib/engine.ts';
 
 import { BreakdownPanel } from './breakdown-panel.tsx';
 import { Portrait } from './portrait.tsx';
+import { PilotRoundView } from './pilot-round.tsx';
 
 export function RoundView({
   round,
@@ -17,6 +18,7 @@ export function RoundView({
   storyState?: 'loading' | 'ready' | 'error';
   showBreakdown?: boolean;
 }) {
+  if (round.combat) return <PilotRoundView round={round} />;
   const fell = round.fellIds.map((id) => character(id).name);
 
   return (
