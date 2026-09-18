@@ -5,6 +5,7 @@ import { getStore, newRunId } from '@/lib/store.ts';
 import type { SavedRun } from '@/lib/share.ts';
 import type { Mode, Side } from '@/lib/types.ts';
 import { runPilot } from '@/lib/pilot.ts';
+import { pilotReplayId } from '@/lib/load-run.ts';
 import { PILOT_RULESET } from '@/lib/pilot-data.ts';
 
 interface Body {
@@ -59,13 +60,17 @@ export async function POST(request: Request) {
     stories: body.ruleset === PILOT_RULESET ? result.rounds.map(r => r.combat!.paragraphs.join('\n\n')) : (body.stories ?? []).slice(0, result.rounds.length).map((s) => String(s).slice(0, 2000)),
   };
 
+  const replayLink = store.kind === 'memory' && body.ruleset === PILOT_RULESET;
+  if (replayLink) run.id = pilotReplayId(seed, result.teamIds, run.createdAt);
   await store.save(run);
   return NextResponse.json({
     id: run.id,
     url: `/run/${run.id}`,
     storage: store.kind,
     warning:
-      store.kind === 'memory'
+      replayLink
+        ? 'Replay link ready. This link recreates your run without needing a saved database record.'
+        : store.kind === 'memory'
         ? 'No DATABASE_URL set: this run is held in memory and will not survive a restart.'
         : undefined,
   });
