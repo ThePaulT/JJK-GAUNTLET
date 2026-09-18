@@ -1,5 +1,4 @@
 import { GauntletGame } from '@/components/gauntlet-game.tsx';
-import { RULES } from '@/lib/data.ts';
 
 export const metadata = { title: 'Gauntlet — JJK Gauntlet' };
 
@@ -12,8 +11,8 @@ export default function GauntletPage() {
           <span className="eyebrow">Gauntlet</span>
           <h1 className="display text-3xl">Pick a side.</h1>
           <p className="max-w-2xl text-sm text-ash">
-            {RULES.draft_rounds} draft rolls, {RULES.options_per_round} faces each, one reroll for
-            the whole run. Then five rungs, each one harder than the last.
+            Draft your trio and face five bosses. Try the new curated Hero Gauntlet,
+            with connected fight narratives and injuries that carry forward.
           </p>
         </header>
       }

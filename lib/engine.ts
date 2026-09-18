@@ -532,6 +532,8 @@ function applyFallPrevention(
 // ---------------------------------------------------------------------------
 
 export interface RoundResult {
+  /** Present only for the versioned curated pilot; legacy scores are not used. */
+  combat?: import('./pilot.ts').PilotEncounter;
   round: number;
   /** Ladder rung index, or -1 in freestyle. */
   rung: number;
@@ -915,6 +917,7 @@ function roundBreakdown(b: Breakdown): Breakdown {
 // ---------------------------------------------------------------------------
 
 export interface RunResult {
+  ruleset?: string;
   seed: string;
   mode: Mode;
   side: Side;

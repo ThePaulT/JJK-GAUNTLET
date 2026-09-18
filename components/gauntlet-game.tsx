@@ -15,6 +15,7 @@ import { CharacterCard } from './character-card.tsx';
 import { Portrait } from './portrait.tsx';
 import { RoundView } from './round-view.tsx';
 import { ShareButtons } from './share-buttons.tsx';
+import { PilotGauntlet } from './pilot-gauntlet.tsx';
 
 type Phase = 'side' | 'draft' | 'fight' | 'done';
 
@@ -128,6 +129,9 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
   };
 
   // ---- side ---------------------------------------------------------------
+  if (mode === 'gauntlet' && side === 'hero' && phase !== 'side') {
+    return <PilotGauntlet key={seed} seed={seed} onExit={() => setPhase('side')} />;
+  }
   if (phase === 'side') {
     return (
       <div className="flex flex-col gap-8">
@@ -150,6 +154,7 @@ export function GauntletGame({ mode, fixedSeeds, intro }: Props) {
                 <span className={`text-xs ${s === 'hero' ? 'text-curse' : 'text-blood'}`}>
                   Final boss: {character(ladder.final_boss).name}
                 </span>
+                {mode === 'gauntlet' && <span className="text-xs text-ash">{s === 'hero' ? 'New: six-character draft · persistent combat · narrative first' : 'Classic draft and battle rules'}</span>}
               </button>
             );
           })}
