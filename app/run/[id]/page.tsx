@@ -7,7 +7,7 @@ import { RoundView } from '@/components/round-view.tsx';
 import { ShareButtons } from '@/components/share-buttons.tsx';
 import { DB, character } from '@/lib/data.ts';
 import { cardFacts, shareText } from '@/lib/share.ts';
-import { getStore } from '@/lib/store.ts';
+import { loadRun } from '@/lib/load-run.ts';
 
 export async function generateMetadata({
   params,
@@ -15,7 +15,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const run = await getStore().get(id);
+  const run = await loadRun(id);
   if (!run) return { title: 'Run not found — JJK Gauntlet' };
   const facts = cardFacts(run);
   return {
@@ -28,7 +28,7 @@ export async function generateMetadata({
 
 export default async function RunPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const run = await getStore().get(id);
+  const run = await loadRun(id);
   if (!run) notFound();
 
   const facts = cardFacts(run);

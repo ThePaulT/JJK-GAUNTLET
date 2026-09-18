@@ -4,7 +4,7 @@ import { ImageResponse } from 'next/og';
 import { ResultCard } from '@/lib/card.tsx';
 import { portraitUrls } from '@/lib/portrait-url.ts';
 import { cardFacts } from '@/lib/share.ts';
-import { getStore } from '@/lib/store.ts';
+import { loadRun } from '@/lib/load-run.ts';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
@@ -12,7 +12,7 @@ export const alt = 'JJK Gauntlet run result';
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const run = await getStore().get(id);
+  const run = await loadRun(id);
 
   if (!run) {
     return new ImageResponse(

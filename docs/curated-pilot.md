@@ -11,3 +11,5 @@ Numbers are game abstractions. Rika has a ten-assisted-attack budget, not a simu
 The browser immediately displays the resolved story with one continuation button. Expandable details expose loadouts and the actual event log. Saving sends only seed, team and ruleset; the server replays and stores the authoritative result, ignoring submitted prose or scores.
 
 Validation covers all 40 matchups over ten seeds with event-by-event replay and resource bounds, draft uniqueness, deterministic input normalization, both Megumi injury outcomes, exact survivor continuity, domain target eligibility, Todo/Maki restrictions and server validation. Existing engine tests also remain in place.
+
+Without a configured database, pilot sharing uses a versioned replay link carrying only seed, team and creation time. Run pages, JSON and image routes validate and recompute it, so links survive serverless cold starts. Legacy memory-backed runs still require a database for durable storage.

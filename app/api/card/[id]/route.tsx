@@ -3,12 +3,12 @@ import { ImageResponse } from 'next/og';
 import { ResultCard } from '@/lib/card.tsx';
 import { portraitUrls } from '@/lib/portrait-url.ts';
 import { cardFacts } from '@/lib/share.ts';
-import { getStore } from '@/lib/store.ts';
+import { loadRun } from '@/lib/load-run.ts';
 
 /** The vertical card behind "Save image" — phone-story shaped. */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const run = await getStore().get(id);
+  const run = await loadRun(id);
   if (!run) return new Response('No such run.', { status: 404 });
 
   const { origin, host } = new URL(request.url);
