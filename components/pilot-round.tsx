@@ -11,9 +11,10 @@ export function PilotRoundView({ round }: { round: RoundResult }) {
       <div><p className="eyebrow">Boss {round.rung + 1} of 5 · Encounter {round.round}</p><h2 className="display mt-2 text-3xl">{round.enemyLabel}</h2></div>
       <Portrait id={round.enemyIds[0]} size={72} className="border border-sand" />
     </header>
-    <div className="flex flex-col gap-4 text-sm leading-7 sm:text-base" aria-label="Battle narrative">
-      {combat.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-    </div>
+    {combat.highlights ? <ul className="list-disc space-y-3 pl-5 text-sm leading-7 sm:text-base" aria-label="Battle highlights">
+      {combat.highlights.map((p, i) => <li key={i}>{p}</li>)}
+    </ul> : <div className="space-y-4 text-sm leading-7">{combat.paragraphs.map((p, i) => <p key={i}>{p}</p>)}</div>}
+    {combat.highlights && <details className="border-t border-sand pt-3"><summary className="cursor-pointer text-sm text-ash">Read the full narrative</summary><div className="mt-4 space-y-4 text-sm leading-7" aria-label="Battle narrative">{combat.paragraphs.map((p, i) => <p key={i}>{p}</p>)}</div></details>}
     <div className="flex flex-wrap gap-3 border-t border-sand pt-4">
       {combat.end.filter(s => !round.enemyIds.includes(s.id)).map(s => <div key={s.id} className="flex items-center gap-2">
         <Portrait id={s.id} size={34} className={s.status === 'out' ? 'grayscale opacity-40' : ''} />

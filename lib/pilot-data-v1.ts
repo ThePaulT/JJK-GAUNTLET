@@ -1,7 +1,10 @@
 /** Authored game abstractions, not canonical measurements. No legacy power scores. */
-export const PILOT_RULESET = 'curated-2';
-export const PILOT_ROSTER = ['yuji', 'yuta', 'megumi', 'maki', 'todo', 'inumaki'] as const;
-export function draftOptions(picked: readonly string[]) { return PILOT_ROSTER.filter(id => !picked.includes(id)); }
+export const PILOT_RULESET = 'curated-1';
+export const PILOT_PICKS = [
+  { label: 'Lead the fight', ids: ['yuji', 'yuta'], hint: 'Soul pressure or Rika and a declared Copy loadout.' },
+  { label: 'Create the opening', ids: ['megumi', 'maki'], hint: 'Shadows and barrier interference or direct pursuit with the Split Soul Katana.' },
+  { label: 'Support the squad', ids: ['todo', 'inumaki'], hint: 'Reposition a valid ally or risk your voice to hold the opponent.' },
+] as const;
 export const PILOT_BOSSES = ['hanami', 'jogo', 'mahito', 'kenjaku', 'sukuna'] as const;
 export type PilotId = 'yuji' | 'yuta' | 'megumi' | 'maki' | 'todo' | 'inumaki' | typeof PILOT_BOSSES[number];
 export interface PilotProfile {
@@ -24,9 +27,9 @@ export const PILOT_PROFILES: Record<PilotId, PilotProfile> = {
   sukuna: { version: 'Reincarnated-body encounter preset', kit: 'Shrine slashes, four-arm close pressure, Malevolent Shrine, self-RCT.', limits: 'Explicit game preset: restored domain access, reduced starting reserves after a prior battle. No Ten Shadows, Mahoraga, world slash, Kamutoke or Furnace in this pilot.', body: 42, reserves: 20, speed: 5, skill: 5, output: 6, defense: 5, rct: true, domain: { name: 'Malevolent Shrine', barrier: 'open', refinement: 5, effect: 'slash' } },
 };
 export function isPilotTeam(ids: readonly string[]): boolean {
-  return ids.length === 3 && new Set(ids).size === 3 && ids.every(id => (PILOT_ROSTER as readonly string[]).includes(id));
+  return ids.length === 3 && new Set(ids).size === 3 && PILOT_PICKS.every(p => p.ids.filter(id => ids.includes(id)).length === 1);
 }
 export function pilotTeams(): PilotId[][] {
-  return PILOT_ROSTER.flatMap((a, i) => PILOT_ROSTER.slice(i + 1).flatMap((b, j) => PILOT_ROSTER.slice(i + j + 2).map(c => [a, b, c])));
+  return PILOT_PICKS[0].ids.flatMap(a => PILOT_PICKS[1].ids.flatMap(b => PILOT_PICKS[2].ids.map(c => [a, b, c])));
 }
 export const PILOT_ENCOUNTER_RULES = 'Curated loadouts; no outside helpers. Reserves, output and damage units are game abstractions. A short transit restores four reserve units, eases one level of voice strain and ends ordinary burnout, but never erases wounds or soul damage. Rika is limited to ten assisted sword attacks per run in this pilot; this is a use budget, not a literal five-minute clock. Sukuna uses a declared reduced-reserve, domain-restored encounter preset.';
