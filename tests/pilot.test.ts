@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { initialCombatant, resolvePilotEncounter, runPilot } from '../lib/pilot.ts';
+import { initialCombatant, resolvePilotEncounter, runPilot, combatCondition } from '../lib/pilot.ts';
 import { isPilotTeam, pilotTeams, PILOT_BOSSES, PILOT_ROSTER, draftOptions, PILOT_PROFILES } from '../lib/pilot-data.ts';
 
 import { PILOT_MATCHUPS } from '../lib/pilot-plans.ts';
@@ -103,4 +103,13 @@ test('setup sequences vary, exhausted or fallen supports cannot create openings'
   expect(r.events.some(e => e.actor === 'inumaki')).toBe(false);
   expect(r.highlights?.join(' ')).not.toMatch(/voice|throat|commands/);
   expect(r.end.find(s => s.id === 'inumaki')).toEqual(dead);
+});
+
+test('post-transit highlight agrees with the displayed survivor conditions', () => {
+  const run = runPilot('transit-summary', ['yuji','todo','inumaki']);
+  for (const round of run.rounds.filter(r => r.won && r.rung < 4)) {
+    for (const survivor of round.combat.end.filter(s => s.status === 'active' && !round.enemyIds.includes(s.id))) {
+      expect(round.combat.highlights?.at(-1)).toContain(combatCondition(survivor).toLowerCase());
+    }
+  }
 });
