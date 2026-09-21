@@ -74,7 +74,7 @@ export function cardFacts(run: SavedRun): CardFacts {
     upset: result.upsets > 0,
     hype: result.hype,
     teamNames: run.teamIds.map((id) => character(id).name),
-    sideLabel: run.side === 'hero' ? 'Hero Gauntlet' : 'Villain Gauntlet',
+    sideLabel: result.ruleset === 'solo-1' ? 'Solo Gauntlet' : run.side === 'hero' ? 'Hero Gauntlet' : 'Villain Gauntlet',
   };
 }
 

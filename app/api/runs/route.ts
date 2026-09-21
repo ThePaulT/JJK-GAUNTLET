@@ -6,8 +6,10 @@ import type { SavedRun } from '@/lib/share.ts';
 import type { Mode, Side } from '@/lib/types.ts';
 import { runPilot as runPilotV1 } from '@/lib/pilot-v1.ts';
 import { runPilot } from '@/lib/pilot.ts';
-import { pilotReplayId } from '@/lib/load-run.ts';
+import { pilotReplayId, soloReplayId } from '@/lib/load-run.ts';
 import { PILOT_RULESET } from '@/lib/pilot-data.ts';
+import { SOLO_RULESET } from '@/lib/solo-data.ts';
+import { runSolo } from '@/lib/solo.ts';
 
 interface Body {
   ruleset?: string;
@@ -42,9 +44,9 @@ export async function POST(request: Request) {
   // own result, so a shared link can never show a run the engine did not make.
   let result;
   try {
-    if (body.ruleset && body.ruleset !== PILOT_RULESET && body.ruleset !== 'curated-1') throw new Error('Unknown ruleset');
+    if (body.ruleset && body.ruleset !== PILOT_RULESET && body.ruleset !== 'curated-1' && body.ruleset !== SOLO_RULESET) throw new Error('Unknown ruleset');
     if (body.ruleset && (side !== 'hero' || mode !== 'gauntlet')) throw new Error('Invalid pilot mode');
-    result = body.ruleset === PILOT_RULESET ? runPilot(seed, teamIds) : body.ruleset === 'curated-1' ? runPilotV1(seed, teamIds) : runGauntlet(seed, side, teamIds, mode === 'daily' ? 'daily' : 'gauntlet');
+    result = body.ruleset === SOLO_RULESET ? runSolo(seed, teamIds.length === 1 ? teamIds[0] : '') : body.ruleset === PILOT_RULESET ? runPilot(seed, teamIds) : body.ruleset === 'curated-1' ? runPilotV1(seed, teamIds) : runGauntlet(seed, side, teamIds, mode === 'daily' ? 'daily' : 'gauntlet');
   } catch {
     return NextResponse.json({ error: 'Invalid team or combat ruleset.' }, { status: 400 });
   }
@@ -58,11 +60,11 @@ export async function POST(request: Request) {
     seed,
     teamIds,
     result,
-    stories: body.ruleset ? result.rounds.map(r => r.combat!.paragraphs.join('\n\n')) : (body.stories ?? []).slice(0, result.rounds.length).map((s) => String(s).slice(0, 2000)),
+    stories: body.ruleset === SOLO_RULESET ? result.rounds.map(r => r.notes.join(' ')) : body.ruleset ? result.rounds.map(r => r.combat!.paragraphs.join('\n\n')) : (body.stories ?? []).slice(0, result.rounds.length).map((s) => String(s).slice(0, 2000)),
   };
 
   const replayLink = store.kind === 'memory' && !!body.ruleset;
-  if (replayLink) run.id = pilotReplayId(seed, result.teamIds, run.createdAt, body.ruleset);
+  if (replayLink) run.id = body.ruleset === SOLO_RULESET ? soloReplayId(seed, result.teamIds[0], run.createdAt) : pilotReplayId(seed, result.teamIds, run.createdAt, body.ruleset);
   await store.save(run);
   return NextResponse.json({
     id: run.id,

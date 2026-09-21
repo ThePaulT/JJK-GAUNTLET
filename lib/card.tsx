@@ -203,7 +203,7 @@ export function ResultCard(props: CardProps) {
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', flexDirection: 'column', marginBottom: px(28) }}>
           <div style={{ display: 'flex', fontSize: px(24), letterSpacing: px(5), color: ASH }}>
-            SQUAD
+            {sideLabel === 'Solo Gauntlet' ? 'FIGHTER' : 'SQUAD'}
           </div>
           <div style={{ display: 'flex', marginTop: px(14) }}>
             {teamNames.map((name, i) => {
