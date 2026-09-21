@@ -419,6 +419,7 @@ export function runPilot(seed: string, ids: string[]): PilotRun {
       combat.events.push({ id: `transit-${rung}`, exchange: (combat.events.at(-1)?.exchange ?? 0) + 1, kind: 'transit', actor: team.find(active)!.id, rule: 'declared-inter-encounter-recovery', important: false, text: transit, changes });
       combat.end = [...copy(team), copy(boss)];
       if (transit) combat.paragraphs[2] += ` ${transit}`;
+      if (combat.highlights?.length) combat.highlights[combat.highlights.length - 1] = `${name(boss)} is defeated. After transit, ${team.filter(active).map(s => `${name(s)} is ${combatCondition(s).toLowerCase()}`).join('; ')}.`;
     }
   }
   const mvp = team.slice().sort((a,b) => b.contribution - a.contribution || a.id.localeCompare(b.id))[0];
