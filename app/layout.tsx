@@ -6,7 +6,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'JJK Gauntlet',
   description:
-    'Draft a trio, run the five-rung ladder, and find out how far you get. Jujutsu Kaisen fan project.',
+    'Choose one Jujutsu Kaisen fighter and see how far they get through five authored matchups.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -32,8 +32,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </header>
           <main className="flex-1 py-8">{children}</main>
           <footer className="border-t border-sand py-5 text-xs text-ash">
-            Unofficial fan project. Original manga ch. 1–271, peak versions. Outcomes are decided by
-            the engine; the story text is written afterwards.
+            Unofficial fan project. Matchups use declared versions and depicted abilities; the
+            resulting calls remain game rulings, not canon events.
           </footer>
         </div>
       </body>

@@ -1,19 +1,20 @@
 # JJK Gauntlet
 
-Draft a trio, run the five-rung ladder, and find out how far you get. A
-Jujutsu Kaisen fan project: Next.js App Router, TypeScript, Tailwind, deployable
-on Vercel.
+Choose one fighter, run the five-rung ladder, and find out how far they get. The
+main Solo Gauntlet uses 30 authored matchup rulings with declared versions and
+conditions. This is a Jujutsu Kaisen fan project built with Next.js App Router,
+TypeScript and Tailwind, deployable on Vercel.
 
-Every number comes out of `data/jjk_gauntlet_db.json` — 48 characters, 23
-counters, 5 domain rules, 28 synergies, two ladders. Nothing about a character
-is hardcoded anywhere in the engine.
+Freestyle and Daily retain the seeded score engine backed by
+`data/jjk_gauntlet_db.json`: 48 characters, 23 counters, 5 domain rules, 28
+synergies and two ladders.
 
 ## Running it
 
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 58 tests, no network, no database
+npm test         # no network or database required
 npm run build
 ```
 
@@ -34,11 +35,10 @@ either key, local narration still works. The `runs` table is created on first us
 
 ## The three modes
 
-**Gauntlet** — pick Hero or Villain, draft over three rolls of four (one reroll
-for the whole run, `legendary_roll_chance` per roll for Gojo or Sukuna), then
-climb five rungs. A lost round knocks a member out and weakens that rung by
-`loss_opponent_weaken`; you try it again with who is left. The run ends when
-everyone is down or the final boss falls.
+**Gauntlet** — choose one of six reviewed fighters, then face Hanami, Jogo,
+Mahito, Kenjaku and Sukuna in sequence. Each rung is a fresh fight and the run
+stops at the first authored loss. The exact versions, loadouts and reasoning
+are visible in the result.
 
 **Freestyle** — up to three a side, any mix. Win % comes from running the real
 engine 2,000 times before you commit to one fight. Cross-side synergies only
@@ -48,6 +48,9 @@ exist here, and so do the rivalry penalties.
 groups, same faces, same order. What you take is the only variable.
 
 ## How a round is decided
+
+Solo Gauntlet outcomes come from the explicit rulings in `lib/solo-data.ts`.
+Freestyle and Daily use the seeded score formula below.
 
 ```
 top_power + others_coef * sum(other_power * gap_factor) + synergy + counters

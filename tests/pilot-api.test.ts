@@ -5,6 +5,7 @@ vi.mock('@/lib/store.ts', () => ({ newRunId: () => 'test-run', getStore: () => (
 import { POST } from '../app/api/runs/route.ts';
 import { loadRun } from '../lib/load-run.ts';
 import { runPilot } from '../lib/pilot.ts';
+import { runSolo } from '../lib/solo.ts';
 
 const send = (body: unknown) => POST(new Request('http://localhost/api/runs', { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } }));
 test('server replays pilot and ignores client-authored results and stories', async () => {
@@ -31,4 +32,20 @@ test('memory-hosted pilot links replay without relying on the saved record', asy
   saved.length = 0;
   expect((await loadRun(id))?.result).toEqual(runPilot('portable', ['yuta','megumi','todo']));
   for (const bad of ['p2_invalid', 'p2_' + 'a'.repeat(1601), 'p2_' + Buffer.from(JSON.stringify(['seed', ['yuji','yuji','todo'], new Date().toISOString()])).toString('base64url')]) expect(await loadRun(bad)).toBeNull();
+});
+
+test('server-authoritative solo links use their own portable replay version', async () => {
+  const response = await send({ mode: 'gauntlet', side: 'hero', seed: 'solo-portable', teamIds: ['yuta'], ruleset: 'solo-1', stories: ['Yuta wins everything.'] });
+  expect(response.status).toBe(200);
+  const { id } = await response.json();
+  expect(id).toMatch(/^s1_/);
+  saved.length = 0;
+  const replay = await loadRun(id);
+  expect(replay?.result).toEqual(runSolo('solo-portable', 'yuta'));
+  expect(replay?.stories).toEqual(runSolo('solo-portable', 'yuta').rounds.map(round => round.notes.join(' ')));
+  for (const bad of [
+    's1_invalid',
+    's1_' + 'a'.repeat(1601),
+    's1_' + Buffer.from(JSON.stringify(['seed', 'gojo', new Date().toISOString()])).toString('base64url'),
+  ]) expect(await loadRun(bad)).toBeNull();
 });

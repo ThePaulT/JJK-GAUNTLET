@@ -6,18 +6,22 @@ import type { RoundResult } from '@/lib/engine.ts';
 import { BreakdownPanel } from './breakdown-panel.tsx';
 import { Portrait } from './portrait.tsx';
 import { PilotRoundView } from './pilot-round.tsx';
+import { SoloRoundView } from './solo-round.tsx';
 
 export function RoundView({
   round,
   story,
   storyState,
   showBreakdown = false,
+  solo = false,
 }: {
   round: RoundResult;
   story?: string;
   storyState?: 'loading' | 'ready' | 'error';
   showBreakdown?: boolean;
+  solo?: boolean;
 }) {
+  if (solo) return <SoloRoundView round={round} />;
   if (round.combat) return <PilotRoundView round={round} />;
   const fell = round.fellIds.map((id) => character(id).name);
 

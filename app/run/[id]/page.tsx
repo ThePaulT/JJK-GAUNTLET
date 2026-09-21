@@ -33,12 +33,13 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
 
   const facts = cardFacts(run);
   const ladder = DB.ladders[run.side];
+  const isSolo = run.result.ruleset === 'solo-1';
 
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-4 border-b border-sand pb-6">
         <span className="eyebrow">
-          {facts.sideLabel} · {run.mode} · seed {run.seed}
+          {facts.sideLabel} · {isSolo ? 'authored rulings' : `${run.mode} · seed ${run.seed}`}
         </span>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
@@ -73,7 +74,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
 
       <section className="flex flex-wrap items-center gap-6">
         <div className="flex flex-col gap-1">
-          <span className="eyebrow">MVP</span>
+          <span className="eyebrow">{isSolo ? 'Fighter' : 'MVP'}</span>
           <span className="flex items-center gap-2">
             {facts.mvpId ? <Portrait id={facts.mvpId} size={26} className="border border-sand" /> : null}
             {facts.mvpName ?? '—'}
@@ -96,7 +97,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
       <section className="flex flex-col gap-4">
         <h2 className="eyebrow">The run, round by round</h2>
         {run.result.rounds.map((r, i) => (
-          <RoundView key={`${r.rung}-${r.round}`} round={r} story={run.stories[i]} showBreakdown />
+          <RoundView key={`${r.rung}-${r.round}`} round={r} story={run.stories[i]} showBreakdown solo={isSolo} />
         ))}
       </section>
 
@@ -104,9 +105,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
         <Link className="btn" href="/gauntlet">
           Run your own
         </Link>
-        <Link className="btn" href={`/gauntlet`}>
-          Same seed, your picks
-        </Link>
+        {!isSolo ? <Link className="btn" href="/gauntlet">Same seed, your picks</Link> : null}
       </div>
     </div>
   );
