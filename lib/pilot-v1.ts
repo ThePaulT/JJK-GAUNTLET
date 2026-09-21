@@ -1,9 +1,8 @@
 import { character, DB } from './data.ts';
 import type { Breakdown, RoundResult, RunResult } from './engine.ts';
 import { makeRng, type Rng } from './rng.ts';
-import { isPilotTeam, PILOT_BOSSES, PILOT_PROFILES, PILOT_RULESET, type PilotId } from './pilot-data.ts';
-import { battleHighlights, transitText } from './pilot-story.ts';
-import { pilotPlan } from './pilot-plans.ts';
+import { isPilotTeam, PILOT_BOSSES, PILOT_PROFILES, PILOT_RULESET, type PilotId } from './pilot-data-v1.ts';
+import { pilotPlan } from './pilot-plans-v1.ts';
 
 export interface CombatState {
   id: PilotId; body: number; ce: number; soulDamage: number; throat: number;
@@ -12,12 +11,11 @@ export interface CombatState {
 }
 export interface CombatEvent {
   id: string; exchange: number; kind: string; actor: PilotId; target?: PilotId;
-  text: string; rule: string; important: boolean; sourceEventId?: string;
+  text: string; rule: string; important: boolean;
   changes: { id: PilotId; before: CombatState; after: CombatState }[];
 }
 export interface PilotEncounter {
-  ruleset: string;
-  highlights?: string[];
+  ruleset: typeof PILOT_RULESET;
   start: CombatState[]; end: CombatState[]; events: CombatEvent[];
   paragraphs: string[]; outcome: 'won' | 'casualty' | 'defeated' | 'stalemate';
 }
@@ -61,8 +59,6 @@ export function resolvePilotEncounter(teamInput: CombatState[], bossInput: Comba
   const events: CombatEvent[] = [];
   let exchange = 0, opening = 0, restrained = false, rescued = false, bossCommitted = false, pressure = 0;
   let interference = false;
-  const acted = new Set<PilotId>();
-  let previousSetup: PilotId | undefined;
   const emit: Emit = (kind, actor, target, rule, important, mutate) => {
     const before = copy(all);
     const text = mutate();
@@ -85,7 +81,7 @@ export function resolvePilotEncounter(teamInput: CombatState[], bossInput: Comba
       });
     }
   };
-  const strike = (actor: CombatState, target: CombatState, boost = 0, forced = false, domainHit = false, sourceEventId?: string) => {
+  const strike = (actor: CombatState, target: CombatState, boost = 0, forced = false, domainHit = false) => {
     if (!active(actor) || !active(target)) return;
     const p = profile(actor), t = profile(target);
     const isBoss = actor === boss;
@@ -150,9 +146,8 @@ export function resolvePilotEncounter(teamInput: CombatState[], bossInput: Comba
       else if (label.includes('gravity')) action = `Kenjaku catches ${victim} inside the gravity reversal and crushes the defender toward the ground`;
       else if (label.includes('released curse')) action = `Kenjaku’s released curse reaches ${victim} before the defender can turn it aside`;
       else if (label.includes('Shrine')) action = `Sukuna’s Shrine slash catches ${victim} through the attempted defense`;
-      return `${action}${!active(actualTarget) ? `, taking ${victim} out of the fight` : soul ? '; the damage reaches beyond an ordinary physical wound' : ''}.`;
+      return `${action}${!active(actualTarget) ? `, taking ${victim} out of the fight` : soul ? '; the damage reaches beyond an ordinary physical wound' : '. The hit leaves a wound that carries into the next exchange'}.`;
     });
-    if (sourceEventId) events[events.length - 1].sourceEventId = sourceEventId;
     endDisabledDomains();
     if (actualTarget.domain && actualTarget.domainDamage >= (profile(actualTarget).domain?.refinement ?? 3) * 2) endDomain(actualTarget, 'breaks under the accumulated damage');
   };
@@ -252,52 +247,28 @@ export function resolvePilotEncounter(teamInput: CombatState[], bossInput: Comba
     endDisabledDomains();
   };
   const support = () => {
-    if (!active(boss)) return;
-    const attackers = team.filter(f => active(f) && !acted.has(f.id));
-    const candidates = attackers.filter(f => !f.burnout && f.ce >= 2 && (
-      (f.id === 'inumaki' && f.throat < 3) ||
-      (f.id === 'megumi' && !boss.domain && !f.shadowDomain) || f.id === 'todo'
-    )).filter(f => attackers.some(a => a !== f && (f.id !== 'todo' || (!profile(a).zeroCE && a.ce > 0))));
-    if (!candidates.length) return;
-    // Alternate eligible setups; the seed selects a legal sequence, never a winner.
-    const alternatives = candidates.filter(f => f.id !== previousSetup);
-    const setter = rng.pick(alternatives.length ? alternatives : candidates);
-    const partners = attackers.filter(f => f !== setter && (setter.id !== 'todo' || (!profile(f).zeroCE && f.ce > 0)));
-    const preferred = partners.filter(f => ['yuji', 'yuta', 'maki'].includes(f.id));
-    const partner = rng.pick(preferred.length ? preferred : partners);
-    previousSetup = setter.id; acted.add(setter.id);
-    let success = true;
-    if (setter.id === 'inumaki') {
-      success = profile(setter).skill + 2 + injuryPenalty(boss) + jitter(rng) >= profile(boss).skill;
-      emit('speech', setter, boss, 'cursed-speech-resistance-and-recoil', true, () => {
-        pay(setter, 2); setter.throat = Math.min(3, setter.throat + (profile(boss).output >= 5 ? 2 : 1));
-        restrained = success;
-        if (success) setter.contribution += 3;
-        return success ? `Inumaki calls “Stop,” holding ${name(boss)} in place for ${name(partner)}; the command strains his throat${setter.throat >= 3 ? ' and exhausts his voice' : ''}.` : `${name(boss)} resists Inumaki’s “Stop”; the recoil ${setter.throat >= 3 ? 'exhausts his voice' : 'strains his throat'} without creating an opening.`;
+    const s = team.find(f => active(f) && (f.id === 'todo' || f.id === 'inumaki'));
+    if (!s || s.burnout || s.ce < 2) return;
+    if (s.id === 'todo') {
+      const partner = team.find(f => f !== s && active(f) && !profile(f).zeroCE && f.ce > 0);
+      if (partner) emit('setup', s, partner, 'boogie-woogie-ce-targets', false, () => {
+        pay(s, 2); opening = 2; s.contribution += 1;
+        return `Todo swaps with ${name(partner)}, forcing ${name(boss)} to turn before the next attack.`;
       });
-    } else if (setter.id === 'todo') {
-      emit('setup', setter, partner, 'boogie-woogie-ce-targets', true, () => {
-        pay(setter, 2); setter.contribution++;
-        return `Todo swaps with ${name(partner)}, putting the ally on ${name(boss)}’s exposed side.`;
+    } else if (s.throat < 3) {
+      const success = profile(s).skill + 2 + injuryPenalty(boss) + jitter(rng) >= profile(boss).skill;
+      emit('speech', s, boss, 'cursed-speech-resistance-and-recoil', true, () => {
+        pay(s, 2); s.throat = Math.min(3, s.throat + (profile(boss).output >= 5 ? 2 : 1));
+        restrained = success; opening = success ? 2 : 0;
+        if (success) s.contribution += 3;
+        return `Inumaki commands ${name(boss)} to stop${success ? ', catching the opponent for a brief opening' : ', but the opponent resists the command'}. ${s.throat >= 3 ? 'The recoil exhausts his voice; further commands are unavailable.' : 'The command strains his throat.'}`;
       });
-    } else {
-      success = profile(setter).skill + injuryPenalty(boss) + jitter(rng) >= profile(boss).speed;
-      emit('toad', setter, boss, 'summon-restraint-opportunity', success, () => {
-        pay(setter, 2);
-        if (success) { pressure = 2; setter.contribution += 2; }
-        return success ? `Megumi catches ${name(boss)}’s approach with Toad, opening a flank for ${name(partner)}.` : `${name(boss)} avoids Toad’s tongue, denying Megumi the planned opening.`;
-      });
-    }
-    const setup = events.at(-1)!;
-    if (success && active(partner) && active(boss)) {
-      acted.add(partner.id);
-      strike(partner, boss, 2, setter.id === 'inumaki', false, setup.id);
     }
   };
   const bossAction = () => {
     if (!active(boss) || !team.some(active) || bossCommitted) return;
     if (restrained) {
-      emit('restraint', boss, undefined, 'brief-restraint-consumed', false, () => { restrained = false; return `${name(boss)} breaks free after the follow-up, losing the chance to counterattack in that interval.`; });
+      emit('restraint', boss, undefined, 'brief-restraint-consumed', false, () => { restrained = false; return `${name(boss)} breaks free of the brief restraint, losing the chance to attack in that interval.`; });
       return;
     }
     if (domainAction()) return;
@@ -314,19 +285,24 @@ export function resolvePilotEncounter(teamInput: CombatState[], bossInput: Comba
   const fallenAtStart = team.filter(s => !active(s)).length;
   let outcome: PilotEncounter['outcome'] = 'stalemate';
   for (exchange = 1; exchange <= 12; exchange++) {
-    acted.clear();
     opening = 0; restrained = false; rescued = false; interference = false; bossCommitted = false; pressure = 0;
     const domainAtStart = boss.domain > 0;
     if (domainAtStart) domainPulse();
-    if (!team.some(active) || !active(boss)) { endDisabledDomains(); outcome = active(boss) ? 'defeated' : 'won'; break; }
     support();
+    const setter = team.find(s => s.id === 'megumi' && active(s) && !s.burnout && s.ce >= 2);
+    if (setter && exchange % 2 === 1 && !boss.domain) {
+      const holds = profile(setter).skill + opening + injuryPenalty(boss) + jitter(rng) >= profile(boss).speed;
+      emit('toad', setter, boss, 'summon-restraint-opportunity', holds, () => {
+        pay(setter, 2); if (holds) { opening = Math.min(3, opening + 2); pressure = 2; setter.contribution += 2; }
+        return `Megumi sends Toad across ${name(boss)}’s approach${holds ? ', forcing the opponent to pull clear while an ally attacks the exposed angle' : ', but the opponent avoids the tongue without losing position'}.`;
+      });
+    }
     const fast = profile(boss).speed - injuryPenalty(boss) + jitter(rng) > Math.max(...team.filter(active).map(s => profile(s).speed - injuryPenalty(s)));
     if (fast) bossAction();
     if (!domainAtStart) domainPulse();
     heroSureHit();
     for (const actor of team.filter(active)) {
-      if (!active(boss)) break;
-      if (!active(actor) || acted.has(actor.id)) continue;
+      if (!active(boss) || !active(actor)) break;
       if (actor.id === 'megumi' && (interference || events.some(e => e.exchange === exchange && e.kind === 'toad'))) continue;
       if (heal(actor)) continue;
       if (heroDomain(actor)) { heroSureHit(); continue; }
@@ -382,12 +358,12 @@ export function resolvePilotEncounter(teamInput: CombatState[], bossInput: Comba
   if (!paragraphs[0]) paragraphs[0] = `${team.filter(s => start.find(a => a.id === s.id)?.status === 'active').map(name).join(', ')} face ${name(boss)} with their current resources.`;
   if (!paragraphs[1]) paragraphs[1] = 'The exchange ends before either side can establish another technique.';
   if (attempt > 0) paragraphs[0] = `The survivors re-engage ${name(boss)}${start.at(-1)!.body < profile(boss).body ? ', still carrying the damage from the last exchange' : ''}${start.at(-1)!.burnout ? ' while the boss’s technique is still in burnout' : ''}. ${paragraphs[0]}`;
-  return { ruleset: PILOT_RULESET, start, end: copy(all), events, paragraphs, outcome, highlights: battleHighlights(events, summary) };
+  return { ruleset: PILOT_RULESET, start, end: copy(all), events, paragraphs, outcome };
 }
 
 const blankBreakdown = (): Breakdown => ({ topPower: 0, others: 0, synergy: 0, counters: 0, domain: 0, specials: 0, blackFlash: 0, rng: 0, flat: 0, total: 0, firedCounters: [], firedSynergies: [], domainNotes: [], specialNotes: [] });
 export function runPilot(seed: string, ids: string[]): PilotRun {
-  if (!seed || seed.length > 128 || !isPilotTeam(ids)) throw new Error('Choose three distinct fighters from the pilot roster.');
+  if (!seed || seed.length > 128 || !isPilotTeam(ids)) throw new Error('Choose one fighter from each pilot pair.');
   // Canonical slot order makes input array order irrelevant to the seed and tactics.
   const teamIds = ['yuji', 'yuta', 'megumi', 'maki', 'todo', 'inumaki'].filter(id => ids.includes(id)) as PilotId[];
   let team = teamIds.map(initialCombatant);
@@ -415,10 +391,10 @@ export function runPilot(seed: string, ids: string[]): PilotRun {
         if (JSON.stringify(s) !== JSON.stringify(after)) changes.push({ id: s.id, before: copy(s), after: copy(after) });
         return after;
       });
-      const transit = transitText(changes);
+      const transit = 'During the short transit, the survivors regain a little energy, voice strain eases and ordinary technique burnout ends. Their combat wounds remain.';
       combat.events.push({ id: `transit-${rung}`, exchange: (combat.events.at(-1)?.exchange ?? 0) + 1, kind: 'transit', actor: team.find(active)!.id, rule: 'declared-inter-encounter-recovery', important: false, text: transit, changes });
       combat.end = [...copy(team), copy(boss)];
-      if (transit) combat.paragraphs[2] += ` ${transit}`;
+      combat.paragraphs[2] += ` ${transit}`;
     }
   }
   const mvp = team.slice().sort((a,b) => b.contribution - a.contribution || a.id.localeCompare(b.id))[0];

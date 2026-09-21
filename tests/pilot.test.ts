@@ -1,25 +1,27 @@
 import { describe, expect, test } from 'vitest';
 import { initialCombatant, resolvePilotEncounter, runPilot } from '../lib/pilot.ts';
-import { isPilotTeam, pilotTeams, PILOT_BOSSES, PILOT_PICKS, PILOT_PROFILES } from '../lib/pilot-data.ts';
+import { isPilotTeam, pilotTeams, PILOT_BOSSES, PILOT_ROSTER, draftOptions, PILOT_PROFILES } from '../lib/pilot-data.ts';
 
 import { PILOT_MATCHUPS } from '../lib/pilot-plans.ts';
 
 describe('curated draft and deterministic combat', () => {
-  test('six distinct offers make eight teams, with no repeated pick', () => {
-    const offers = PILOT_PICKS.flatMap(p => [...p.ids]);
+  test('six available fighters make twenty teams, with no repeated pick', () => {
+    const offers = PILOT_ROSTER;
     expect(new Set(offers).size).toBe(6);
-    expect(pilotTeams()).toHaveLength(8);
-    expect(PILOT_MATCHUPS).toHaveLength(40);
+    expect(pilotTeams()).toHaveLength(20);
+    expect(PILOT_MATCHUPS).toHaveLength(100);
     for (const team of pilotTeams()) expect(isPilotTeam(team)).toBe(true);
     expect(isPilotTeam(['yuji', 'yuji', 'todo'])).toBe(false);
-    expect(isPilotTeam(['yuji', 'yuta', 'todo'])).toBe(false);
+    expect(isPilotTeam(['yuji', 'yuta', 'todo'])).toBe(true);
+    expect(draftOptions(['yuji','yuta'])).toHaveLength(4);
+    expect(draftOptions(['yuji'])).not.toContain('yuji');
     expect(() => runPilot('seed', ['gojo', 'maki', 'todo'])).toThrow();
   });
   test('same inputs replay, including reordered team input', () => {
     const ids = ['yuji', 'megumi', 'todo'];
     expect(runPilot('repeat', ids)).toEqual(runPilot('repeat', [...ids].reverse()));
   });
-  test('all 40 starting matchups have bounded, legal state transitions', () => {
+  test('all 100 starting matchups have bounded, legal state transitions', () => {
     for (const team of pilotTeams()) for (const boss of PILOT_BOSSES) for (let seed = 0; seed < 10; seed++) {
       const result = resolvePilotEncounter(team.map(initialCombatant), initialCombatant(boss), `matrix-${seed}`);
       expect(result.paragraphs).toHaveLength(3);
@@ -73,4 +75,32 @@ describe('curated draft and deterministic combat', () => {
       expect(result.rounds.flatMap(r => r.combat.events).some(e => ['setup','rescue'].includes(e.kind) && e.target === 'maki')).toBe(false);
     }
   });
+});
+
+test('successful Stop has one immediate, damaging follow-up before release', () => {
+  const r = resolvePilotEncounter(['yuji','maki','inumaki'].map(id => initialCombatant(id as 'yuji' | 'maki' | 'inumaki')), initialCombatant('hanami'), 'stop-chain');
+  const speech = r.events.find(e => e.kind === 'speech' && e.text.includes('holding'))!;
+  expect(speech).toBeDefined();
+  const follow = r.events[r.events.indexOf(speech) + 1];
+  expect(follow.sourceEventId).toBe(speech.id);
+  expect(follow.kind).toBe('hit');
+  expect(follow.changes.some(c => c.id === 'hanami' && c.after.body < c.before.body)).toBe(true);
+  expect(r.events.filter(e => e.sourceEventId === speech.id)).toHaveLength(1);
+  expect(r.highlights?.some(h => h.includes('Stop') && (h.includes('Yuji') || h.includes('Maki')))).toBe(true);
+  const attacks = r.events.filter(e => e.exchange === follow.exchange && e.actor === follow.actor && ['hit','evade'].includes(e.kind));
+  expect(attacks).toHaveLength(1);
+});
+
+test('setup sequences vary, exhausted or fallen supports cannot create openings', () => {
+  const starts = new Set<string>();
+  for (let n = 0; n < 20; n++) {
+    const r = resolvePilotEncounter(['yuji','megumi','inumaki'].map(id => initialCombatant(id as 'yuji' | 'megumi' | 'inumaki')), initialCombatant('hanami'), `sequence-${n}`);
+    starts.add(r.events.find(e => ['speech','toad'].includes(e.kind))!.kind);
+  }
+  expect(starts.size).toBe(2);
+  const dead = initialCombatant('inumaki'); dead.status = 'out'; dead.body = 0; dead.throat = 3;
+  const r = resolvePilotEncounter([initialCombatant('yuji'),initialCombatant('maki'),dead], initialCombatant('hanami'), 'no-ghost');
+  expect(r.events.some(e => e.actor === 'inumaki')).toBe(false);
+  expect(r.highlights?.join(' ')).not.toMatch(/voice|throat|commands/);
+  expect(r.end.find(s => s.id === 'inumaki')).toEqual(dead);
 });
