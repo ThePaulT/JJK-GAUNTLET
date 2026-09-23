@@ -1,16 +1,12 @@
 import type { Breakdown, RoundResult, RunResult } from './engine.ts';
 import { character } from './data.ts';
 import {
-  isSoloApproach,
   isSoloFighter,
-  resolveSoloPath,
   SOLO_BOSSES,
-  SOLO_FIGHTERS,
   SOLO_RULESET,
-  soloGamble,
-  type SoloApproachId,
+  soloRuling,
   type SoloFighterId,
-} from './solo-data.ts';
+} from './solo-data-v1.ts';
 
 const emptyBreakdown = (): Breakdown => ({
   topPower: 0,
@@ -29,34 +25,14 @@ const emptyBreakdown = (): Breakdown => ({
   specialNotes: [],
 });
 
-export function validateSoloChoices(
-  fighterId: SoloFighterId,
-  choices: readonly string[],
-): choices is readonly SoloApproachId[] {
-  if (choices.length > SOLO_BOSSES.length) return false;
-  return choices.every((choice, rung) => {
-    if (!isSoloApproach(choice)) return false;
-    return choice === 'measured' || !!soloGamble(fighterId, SOLO_BOSSES[rung]!);
-  });
-}
-
-export function runSolo(
-  seed: string,
-  fighterId: string,
-  choices: readonly string[] = [],
-): RunResult {
-  if (!seed || !isSoloFighter(fighterId) || !validateSoloChoices(fighterId, choices)) {
-    throw new Error('Invalid solo run');
-  }
+export function runSoloV1(seed: string, fighterId: string): RunResult {
+  if (!seed || !isSoloFighter(fighterId)) throw new Error('Invalid solo run');
   const rounds: RoundResult[] = [];
 
   for (const [rung, bossId] of SOLO_BOSSES.entries()) {
-    const approach = choices[rung] ?? 'measured';
-    const resolved = resolveSoloPath(fighterId, bossId, approach, seed);
-    const won = resolved.winner === 'fighter';
-    const mutual = resolved.winner === 'mutual';
+    const ruling = soloRuling(fighterId, bossId);
+    const won = ruling.winner === 'fighter';
     rounds.push({
-      solo: resolved,
       round: rung + 1,
       rung,
       teamIds: [fighterId],
@@ -70,9 +46,9 @@ export function runSolo(
       upsetSide: null,
       upsetReason: null,
       fellIds: won ? [] : [fighterId],
-      enemyFellIds: won || mutual ? [bossId] : [],
-      narrowWin: resolved.verdict !== 'decisive' && won,
-      notes: [...resolved.beats],
+      enemyFellIds: won ? [bossId] : [],
+      narrowWin: ruling.verdict === 'favored' && won,
+      notes: [...ruling.reasons],
       team: emptyBreakdown(),
       enemy: emptyBreakdown(),
     });
@@ -105,6 +81,6 @@ function soloRank(cleared: number): string {
 }
 
 export function randomSoloFighter(seedValue = Math.random()): SoloFighterId {
-  const index = Math.min(Math.floor(seedValue * SOLO_FIGHTERS.length), SOLO_FIGHTERS.length - 1);
-  return SOLO_FIGHTERS[index]!;
+  const index = Math.min(Math.floor(seedValue * 6), 5);
+  return ['yuji', 'yuta', 'megumi', 'maki', 'todo', 'inumaki'][index] as SoloFighterId;
 }

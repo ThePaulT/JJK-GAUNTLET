@@ -1,8 +1,8 @@
 # JJK Gauntlet
 
 Choose one fighter, run the five-rung ladder, and find out how far they get. The
-main Solo Gauntlet uses 30 authored matchup rulings with declared versions and
-conditions. This is a Jujutsu Kaisen fan project built with Next.js App Router,
+main Solo Gauntlet uses 60 authored matchup rulings with declared versions,
+scoped limit-break choices and replayable contested branches. This is a Jujutsu Kaisen fan project built with Next.js App Router,
 TypeScript and Tailwind, deployable on Vercel.
 
 Freestyle and Daily retain the seeded score engine backed by
@@ -35,10 +35,10 @@ either key, local narration still works. The `runs` table is created on first us
 
 ## The three modes
 
-**Gauntlet** — choose one of six reviewed fighters, then face Hanami, Jogo,
-Mahito, Kenjaku and Sukuna in sequence. Each rung is a fresh fight and the run
-stops at the first authored loss. The exact versions, loadouts and reasoning
-are visible in the result.
+**Gauntlet** — choose one of twelve reviewed fighters, then face Hanami, Jogo,
+Mahito, Kenjaku and Sukuna in sequence. Each rung is a fresh encounter and the
+run stops when the fighter loses or pays a terminal cost. The exact versions,
+commitment, causal path and ruling boundary remain visible.
 
 **Freestyle** — up to three a side, any mix. Win % comes from running the real
 engine 2,000 times before you commit to one fight. Cross-side synergies only

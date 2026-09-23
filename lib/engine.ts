@@ -534,6 +534,8 @@ function applyFallPrevention(
 export interface RoundResult {
   /** Present only for the versioned curated pilot; legacy scores are not used. */
   combat?: import('./pilot.ts').PilotEncounter;
+  /** Present only for Solo Gauntlet v2 authored path resolution. */
+  solo?: import('./solo-data.ts').SoloResolvedPath;
   round: number;
   /** Ladder rung index, or -1 in freestyle. */
   rung: number;

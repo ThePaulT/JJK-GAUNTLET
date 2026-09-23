@@ -6,6 +6,7 @@ import { POST } from '../app/api/runs/route.ts';
 import { loadRun } from '../lib/load-run.ts';
 import { runPilot } from '../lib/pilot.ts';
 import { runSolo } from '../lib/solo.ts';
+import { runSoloV1 } from '../lib/solo-v1.ts';
 
 const send = (body: unknown) => POST(new Request('http://localhost/api/runs', { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } }));
 test('server replays pilot and ignores client-authored results and stories', async () => {
@@ -34,18 +35,36 @@ test('memory-hosted pilot links replay without relying on the saved record', asy
   for (const bad of ['p2_invalid', 'p2_' + 'a'.repeat(1601), 'p2_' + Buffer.from(JSON.stringify(['seed', ['yuji','yuji','todo'], new Date().toISOString()])).toString('base64url')]) expect(await loadRun(bad)).toBeNull();
 });
 
-test('server-authoritative solo links use their own portable replay version', async () => {
+test('frozen solo-1 links keep their original portable replay behavior', async () => {
   const response = await send({ mode: 'gauntlet', side: 'hero', seed: 'solo-portable', teamIds: ['yuta'], ruleset: 'solo-1', stories: ['Yuta wins everything.'] });
   expect(response.status).toBe(200);
   const { id } = await response.json();
   expect(id).toMatch(/^s1_/);
   saved.length = 0;
   const replay = await loadRun(id);
-  expect(replay?.result).toEqual(runSolo('solo-portable', 'yuta'));
-  expect(replay?.stories).toEqual(runSolo('solo-portable', 'yuta').rounds.map(round => round.notes.join(' ')));
+  expect(replay?.result).toEqual(runSoloV1('solo-portable', 'yuta'));
+  expect(replay?.stories).toEqual(runSoloV1('solo-portable', 'yuta').rounds.map(round => round.notes.join(' ')));
   for (const bad of [
     's1_invalid',
     's1_' + 'a'.repeat(1601),
     's1_' + Buffer.from(JSON.stringify(['seed', 'gojo', new Date().toISOString()])).toString('base64url'),
+  ]) expect(await loadRun(bad)).toBeNull();
+});
+
+test('solo-2 replay links preserve authored approach choices', async () => {
+  const soloChoices = ['limit-break'];
+  const response = await send({ mode: 'gauntlet', side: 'hero', seed: 'amber', teamIds: ['kashimo'], ruleset: 'solo-2', soloChoices, stories: ['fake'] });
+  expect(response.status).toBe(200);
+  const { id } = await response.json();
+  expect(id).toMatch(/^s2_/);
+  saved.length = 0;
+  const replay = await loadRun(id);
+  expect(replay?.result).toEqual(runSolo('amber', 'kashimo', soloChoices));
+  expect(replay?.result.rounds[0]?.solo?.winner).toBe('mutual');
+  expect(replay?.result.rungsCleared).toBe(0);
+  for (const bad of [
+    's2_invalid',
+    's2_' + Buffer.from(JSON.stringify(['seed', 'todo', ['limit-break'], new Date().toISOString()])).toString('base64url'),
+    's2_' + Buffer.from(JSON.stringify(['seed', 'kashimo', ['limit-break']])).toString('base64url'),
   ]) expect(await loadRun(bad)).toBeNull();
 });

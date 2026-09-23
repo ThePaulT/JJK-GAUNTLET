@@ -7,7 +7,7 @@ const MODES = [
     href: '/gauntlet',
     name: 'Solo Gauntlet',
     line: 'Choose one fighter and see how far they get through five bosses.',
-    detail: 'Thirty authored matchups with declared versions, fixed conditions and concise reasoning.',
+    detail: 'Sixty authored matchups, twelve scoped limit-breaks and replayable contested branches.',
   },
   {
     href: '/freestyle',
@@ -32,9 +32,9 @@ export default function Home() {
           How far does your JJK fighter get?
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-ash">
-          Pick one of six reviewed character versions and run the five-boss ladder. Each result is
-          an authored matchup ruling based on the fighters&apos; actual tools, with the assumptions and
-          reasoning shown instead of a hidden power roll.
+          Pick one of twelve reviewed character versions and run the five-boss ladder. Choose a
+          disciplined line or a costly limit-break where one is credible, then see the opening,
+          interaction and consequence instead of a hidden power roll.
         </p>
       </section>
 
@@ -49,11 +49,11 @@ export default function Home() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="eyebrow">What is fixed</h2>
+        <h2 className="eyebrow">What the ruling fixes</h2>
         <p className="max-w-2xl text-sm leading-relaxed text-ash">
           Every rung starts as a fresh fight in a neutral arena with no prep or outside help. The
-          exact versions and loadouts are declared before the result, and close alternatives appear
-          only when a specific condition could credibly change the winner.
+          exact versions and loadouts are declared before the result. Contested branches select only
+          between authored executions, and terminal costs can end a run even when the boss falls.
         </p>
         <p className="max-w-2xl text-xs leading-relaxed text-ash">Freestyle and Daily remain available as seeded sandbox modes built from the wider {DB.characters.length}-character database.</p>
       </section>
