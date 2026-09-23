@@ -33,7 +33,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
 
   const facts = cardFacts(run);
   const ladder = DB.ladders[run.side];
-  const isSolo = run.result.ruleset === 'solo-1';
+  const isSolo = !!run.result.ruleset?.startsWith('solo-');
 
   return (
     <div className="flex flex-col gap-8">
