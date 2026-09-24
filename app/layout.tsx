@@ -22,18 +22,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/gauntlet" className="hover:text-bone">
                 Gauntlet
               </Link>
-              <Link href="/freestyle" className="hover:text-bone">
-                Freestyle
-              </Link>
-              <Link href="/daily" className="hover:text-bone">
-                Daily
+              <Link href="/labs" className="hover:text-bone">
+                Labs
               </Link>
             </nav>
           </header>
           <main className="flex-1 py-8">{children}</main>
           <footer className="border-t border-sand py-5 text-xs text-ash">
-            Unofficial fan project. Matchups use declared versions and depicted abilities; the
-            resulting calls remain game rulings, not canon events.
+            Unofficial fan project. Current Solo results are authored game rulings; Legacy Labs use
+            the original score model. Neither is a canon event.
           </footer>
         </div>
       </body>

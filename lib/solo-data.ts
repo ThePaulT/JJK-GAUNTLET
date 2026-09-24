@@ -140,7 +140,7 @@ const SOLO_GAMBLES = new Map<string, SoloGamble>([
     p('boss', 'contested', 'Gravity catches the hidden entry', [
       'Maki uses the curse swarm to conceal the first half of her approach.',
       'Kenjaku sacrifices the screen and centers gravity on the only physical exit.',
-      'The interruption gives Womb Profusion enough time to end the attempt.',
+      'The interruption lets the curse screen close while gravity keeps her away from the body she must reach.',
     ], 'Maki is incapacitated after committing her only hidden route.', 'Kenjaku reads terrain rather than magically sensing zero cursed energy.', { uncertainty: 'A replayable read branch decides whether Kenjaku locates the zero-CE entry.' }),
   )],
   ['inumaki:hanami', g(
@@ -235,7 +235,7 @@ const SOLO_GAMBLES = new Map<string, SoloGamble>([
     p('boss', 'contested', 'The curse screen catches the chain', [
       'Toji commits the Inverted Spear and Chain through the first curse layer.',
       'Kenjaku sacrifices another curse to foul the line, then applies gravity to the predictable follow-up.',
-      'Separated from the nullifying tool, Toji is caught by Womb Profusion.',
+      'Separated from the nullifying tool, Toji is pinned by gravity while the curse screen finishes the attempt.',
     ], 'Toji loses the committed tool line and is incapacitated.', 'Inventory breadth provides a physical interception that does not require sensing Toji.', { uncertainty: 'A replayable tool-line branch decides which contact lands first.' }),
   )],
   ['yorozu:kenjaku', g(
@@ -590,11 +590,11 @@ export const SOLO_RULINGS: readonly SoloRuling[] = [
   r('yuki', 'mahito', 'boss', 'favored', [
     'Yuki pulverizes Mahito’s body whenever Garuda fixes his movement.',
     'No shown Star Rage property makes those hits damage the soul, so Mahito can rebuild at continuing energy cost.',
-    'Self-Embodiment strips Simple Domain and creates the touch that decides the fight.',
+    'Self-Embodiment pressures and erodes Simple Domain until it collapses, creating the touch that decides the fight.',
   ], 'Yuki wins if repeated destruction exhausts Mahito before the domain sequence.'),
   r('yuki', 'kenjaku', 'boss', 'favored', [
     'Yuki and Garuda can break Kenjaku’s limbs and force RCT whenever they reach him.',
-    'Womb Profusion strips Simple Domain and creates the severe injury that lowers Yuki’s output.',
+    'Womb Profusion pressures and erodes Simple Domain until it collapses, creating the severe injury that lowers Yuki’s output.',
     'Without Tengen or Choso, gravity and curses finish the wounded sorcerer before she reopens the lane.',
   ], 'Yuki can turn terminal injury into a black hole, but Kenjaku possesses the demonstrated antigravity answer.'),
   r('yuki', 'sukuna', 'boss', 'decisive', [
@@ -621,7 +621,7 @@ export const SOLO_RULINGS: readonly SoloRuling[] = [
   r('toji', 'kenjaku', 'boss', 'favored', [
     'The mutual-awareness start lets Kenjaku see the armory instead of conceding an assassination opening.',
     'Expendable curses occupy the Inverted Spear while gravity centers on Toji’s physical exit.',
-    'Womb Profusion affects the field and ends the stalled approach without relying on cursed-energy recognition.',
+    'Kenjaku keeps the approach stalled with gravity and expendable curses instead of relying on an unproven sure-hit interaction with zero cursed energy.',
   ], 'Toji wins if the extended Inverted Spear clears gravity for one Split Soul Katana entry.'),
   r('toji', 'sukuna', 'boss', 'decisive', [
     'Sukuna tracks physical movement and recognizes the tools without relying only on cursed-energy sensing.',

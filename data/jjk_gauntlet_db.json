@@ -99,7 +99,7 @@
       },
       "special": {
         "key": "mahoraga_gambit",
-        "description": "When Megumi would fall, 40% chance he summons Mahoraga: the opponent loses 15 power for this round. Megumi still falls.",
+        "description": "Legacy lab rule: when Megumi would fall, a 40% chance summons Mahoraga and removes 15 rating points for this round. Megumi still falls.",
         "params": {
           "chance": 0.4,
           "opp_power_loss": 15
@@ -261,7 +261,7 @@
       },
       "special": {
         "key": "speech_strain",
-        "description": "vs opponents 10+ power above him: +3 and double fall risk. Otherwise +6.",
+        "description": "Legacy lab rule: against opponents 10+ rating points above him, +3 and double fall risk; otherwise +6.",
         "params": {
           "strong_bonus": 6,
           "weak_bonus": 3
@@ -2202,28 +2202,28 @@
   "domain_rules": [
     {
       "rule": "domain_pressure",
-      "canon_status": "canon",
-      "text": "If the opponent has a sure-hit domain and the defending side has no domain, anti-domain, or zero-CE fighter, the opponent gains DOM/10."
+      "canon_status": "game_mechanic",
+      "text": "Legacy score approximation: a sure-hit domain adds DOM/10 when the defending side has no modeled answer. This is not a world-1 lore rule."
     },
     {
       "rule": "anti_domain",
-      "canon_status": "canon",
-      "text": "Simple Domain / Hollow Wicker Basket users cut that bonus in half. Kusakabe (strong_anti_domain) cancels it fully."
+      "canon_status": "game_mechanic",
+      "text": "Legacy score approximation: Simple Domain or Hollow Wicker Basket halves the domain bonus and strong_anti_domain cancels it. Actual defenses are temporary states in world-1."
     },
     {
       "rule": "zero_ce_immunity",
-      "canon_status": "canon",
-      "text": "Zero-CE fighters cancel the bonus from CLOSED domains (Maki vs Naoya's Time Cell Moon Palace)."
+      "canon_status": "game_mechanic",
+      "text": "Legacy score approximation based on closed barriers failing to recognize fully realized zero-CE fighters. This is not immunity to physical or environmental effects."
     },
     {
       "rule": "open_domain_exception",
-      "canon_status": "inferred",
-      "text": "Open domains (Sukuna, Kenjaku) still hit zero-CE fighters; Malevolent Shrine cuts everything in range."
+      "canon_status": "game_mechanic",
+      "text": "Legacy score approximation: open domains bypass the old zero-CE bonus cancellation. Only effects that legally target matter or the environment should threaten zero-CE fighters in world-1; Womb Profusion is not assumed equivalent to Malevolent Shrine."
     },
     {
       "rule": "domain_clash",
-      "canon_status": "canon",
-      "text": "If both sides have sure-hit domains, the higher DOM side gets +2 (domain refinement decides clashes)."
+      "canon_status": "game_mechanic",
+      "text": "Legacy score approximation: the higher DOM side gets +2. World-1 instead compares barrier skill, domain mastery, current output, conditions, damage, structure, and interference."
     }
   ],
   "synergies": [
@@ -2610,7 +2610,7 @@
       "must_include": null,
       "scope": "freestyle",
       "canon_status": "game_mechanic",
-      "explanation": "Rivals on one team: power penalty, HYPE stamp on the card."
+      "explanation": "Legacy lab rule: rivals on one team receive a rating penalty and a HYPE stamp on the card."
     },
     {
       "id": "sworn_enemies",

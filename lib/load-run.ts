@@ -4,6 +4,7 @@ import { runPilot } from './pilot.ts';
 import { runSolo } from './solo.ts';
 import { runSoloV1 } from './solo-v1.ts';
 import type { SavedRun } from './share.ts';
+import { WORLD_REPLAY_PREFIX } from './rulesets.ts';
 
 /** Versioned replay links survive cold starts without storing client results. */
 export function pilotReplayId(seed: string, teamIds: string[], createdAt: string, ruleset = 'curated-2'): string {
@@ -22,6 +23,9 @@ export function soloReplayId(
   return `${ruleset === 'solo-1' ? 's1' : 's2'}_${Buffer.from(JSON.stringify(payload)).toString('base64url')}`;
 }
 export async function loadRun(id: string): Promise<SavedRun | null> {
+  // Reserved for the event/state resolver. Never let a future world-1 payload
+  // fall through to the solo-2 or score-based replay loaders.
+  if (id.startsWith(WORLD_REPLAY_PREFIX)) return null;
   if (!/^(?:p[12]|s[12])_/.test(id)) return getStore().get(id);
   if (id.length > 1600 || !/^(?:p[12]|s[12])_[A-Za-z0-9_-]+$/.test(id)) return null;
   try {

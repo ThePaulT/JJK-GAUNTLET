@@ -50,7 +50,7 @@ export function CharacterCard({
             <div className="flex items-baseline justify-between gap-2">
               <span className="display text-lg leading-tight">{c.name}</span>
               <span className={`shrink-0 whitespace-nowrap text-xs ${SIDE_ACCENT[c.side]}`}>
-                {c.tier} · {c.power}
+                {c.tier} · legacy {c.power}
               </span>
             </div>
             <div className="eyebrow">{c.role.replace(/_/g, ' ')}</div>
@@ -63,7 +63,7 @@ export function CharacterCard({
             <span
               className={`absolute top-0 right-0 bg-ink/85 px-1.5 py-0.5 text-xs ${SIDE_ACCENT[c.side]}`}
             >
-              {c.tier} · {c.power}
+              {c.tier} · legacy {c.power}
             </span>
           </div>
           <div className="flex flex-col gap-1">

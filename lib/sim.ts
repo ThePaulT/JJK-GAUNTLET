@@ -1,5 +1,5 @@
-/** Monte Carlo over the seeded engine: the numbers shown before a Freestyle
- *  fight come from running the real engine, not from a formula. */
+/** Monte Carlo over the legacy seeded score resolver. These trials estimate
+ *  that model's outcomes; they are not world-1 causal fight simulations. */
 
 import { runFreestyle, runGauntlet } from './engine.ts';
 import type { Side } from './types.ts';

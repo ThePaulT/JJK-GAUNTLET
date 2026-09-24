@@ -61,7 +61,7 @@ function Roster({
               <Portrait id={c.id} size={26} className="shrink-0" />
               <span className="flex-1">{c.name}</span>
               <span className={c.side === 'hero' ? 'text-curse' : 'text-blood'}>
-                {c.tier} · {c.power}
+                {c.tier} · legacy {c.power}
               </span>
             </button>
           );
@@ -132,11 +132,11 @@ export function FreestyleGame() {
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2 border-b border-sand pb-4">
-        <span className="eyebrow">Freestyle</span>
+        <span className="eyebrow">Legacy Freestyle Lab</span>
         <h1 className="display text-3xl">Up to three a side. Any mix.</h1>
         <p className="max-w-2xl text-sm text-ash">
-          Cross-side synergies only exist here — Gojo and Geto, Toji and Megumi — and so do the
-          rivalries that cost you power for putting them on the same team.
+          This preserved experiment uses the original aggregate rating, synergy, counter and seeded
+          swing model. It is useful for playful comparisons, but it is not the lore-constrained world resolver.
         </p>
       </header>
 
@@ -172,7 +172,7 @@ export function FreestyleGame() {
 
       <div className="flex flex-wrap items-center gap-3">
         <button className="btn" type="button" onClick={simulate} disabled={!ready || simming}>
-          {simming ? 'Running 2,000 fights…' : `Simulate ${FIGHTS.toLocaleString()} fights`}
+          {simming ? 'Running 2,000 score trials…' : `Run ${FIGHTS.toLocaleString()} score trials`}
         </button>
         <button className="btn btn-primary" type="button" onClick={runOne} disabled={!ready}>
           Fight once
@@ -191,7 +191,7 @@ export function FreestyleGame() {
           </div>
           <p className="text-xs text-ash">
             {odds.aWins.toLocaleString()} – {odds.bWins.toLocaleString()} over{' '}
-            {odds.fights.toLocaleString()} fights. An upset decided a round in{' '}
+            {odds.fights.toLocaleString()} seeded score trials. An upset decided a round in{' '}
             {odds.upsetRate.toFixed(1)}% of them. The winner finished with{' '}
             {odds.avgSurvivors.toFixed(2)} still standing on average.
           </p>

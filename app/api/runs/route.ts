@@ -11,6 +11,7 @@ import { PILOT_RULESET } from '@/lib/pilot-data.ts';
 import { SOLO_RULESET } from '@/lib/solo-data.ts';
 import { runSolo } from '@/lib/solo.ts';
 import { runSoloV1 } from '@/lib/solo-v1.ts';
+import { WORLD_RULESET } from '@/lib/rulesets.ts';
 
 interface Body {
   ruleset?: string;
@@ -44,6 +45,12 @@ export async function POST(request: Request) {
 
   // The client sends what it played; the server replays the seed and stores its
   // own result, so a shared link can never show a run the engine did not make.
+  if (body.ruleset === WORLD_RULESET) {
+    return NextResponse.json(
+      { error: 'world-1 is reserved until the event/state resolver is available.' },
+      { status: 501 },
+    );
+  }
   let result;
   try {
     if (body.ruleset && body.ruleset !== PILOT_RULESET && body.ruleset !== 'curated-1' && body.ruleset !== 'solo-1' && body.ruleset !== SOLO_RULESET) throw new Error('Unknown ruleset');

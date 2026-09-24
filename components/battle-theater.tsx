@@ -48,7 +48,7 @@ export function BattleTheater({ run, stories, onComplete }: {
     </ol>
     <div className="flex flex-wrap justify-between gap-2 text-xs text-ash">
       <span>Boss {round.rung + 1} / 5 · Encounter {roundIndex + 1}</span>
-      <span>{weakening ? `Worn down: −${weakening} boss base power` : 'First clash with this boss'}</span>
+      <span>{weakening ? `Worn down: −${weakening} legacy boss rating` : 'First clash with this boss'}</span>
     </div>
     <div className={`battle-arena panel ${domainActive ? 'domain-active' : ''}`}>
       <div className="relative z-10 flex justify-between border-b border-sand p-3">

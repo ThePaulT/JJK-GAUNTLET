@@ -1,13 +1,21 @@
 # JJK Gauntlet
 
 Choose one fighter, run the five-rung ladder, and find out how far they get. The
-main Solo Gauntlet uses 60 authored matchup rulings with declared versions,
-scoped limit-break choices and replayable contested branches. This is a Jujutsu Kaisen fan project built with Next.js App Router,
-TypeScript and Tailwind, deployable on Vercel.
+current Solo Gauntlet is a preserved authored edition with 60 matchup rulings,
+declared versions, scoped limit-break choices and replayable contested branches.
+It is not presented as the forthcoming lore-constrained world simulation. This
+is a Jujutsu Kaisen fan project built with Next.js App Router, TypeScript and
+Tailwind, deployable on Vercel.
 
-Freestyle and Daily retain the seeded score engine backed by
+Freestyle and Daily Draft are preserved under Legacy Labs. They retain the seeded score engine backed by
 `data/jjk_gauntlet_db.json`: 48 characters, 23 counters, 5 domain rules, 28
-synergies and two ladders.
+synergies and two ladders. Their percentages are repeated score-model trials,
+not causal lore simulations.
+
+`world-1` is the reserved identifier for the event/state resolver described in
+the world simulation specification. The API returns `501` for that ruleset until
+its resolver exists, and the future replay family is reserved as `w1_` so it can
+never be decoded as `solo-2`.
 
 ## Running it
 
@@ -40,17 +48,19 @@ Mahito, Kenjaku and Sukuna in sequence. Each rung is a fresh encounter and the
 run stops when the fighter loses or pays a terminal cost. The exact versions,
 commitment, causal path and ruling boundary remain visible.
 
-**Freestyle** — up to three a side, any mix. Win % comes from running the real
-engine 2,000 times before you commit to one fight. Cross-side synergies only
-exist here, and so do the rivalry penalties.
+**Freestyle Lab** — up to three a side, any mix. Win % comes from running the
+legacy score model 2,000 times before you commit to one trial. Cross-side
+synergies only exist here, and so do the rivalry penalties.
 
-**Daily** — the same three rolls for everyone, seeded by the UTC date. Same
-groups, same faces, same order. What you take is the only variable.
+**Daily Draft Lab** — the same three score-model rolls for everyone, seeded by
+the UTC date. Same groups, same faces, same order. What you take is the only
+variable. This is not the planned Daily World Prediction product.
 
 ## How a round is decided
 
 Solo Gauntlet outcomes come from the explicit rulings in `lib/solo-data.ts`.
-Freestyle and Daily use the seeded score formula below.
+Freestyle and Daily Draft use the legacy seeded score formula below. Nothing in
+this section is a `world-1` mechanic.
 
 ```
 top_power + others_coef * sum(other_power * gap_factor) + synergy + counters

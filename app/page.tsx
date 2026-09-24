@@ -7,19 +7,13 @@ const MODES = [
     href: '/gauntlet',
     name: 'Solo Gauntlet',
     line: 'Choose one fighter and see how far they get through five bosses.',
-    detail: 'Sixty authored matchups, twelve scoped limit-breaks and replayable contested branches.',
+    detail: 'The current authored edition: sixty reviewed matchups and twelve scoped limit-breaks.',
   },
   {
-    href: '/freestyle',
-    name: 'Freestyle',
-    line: 'Up to three per side, any mix, heroes against curses or anything else.',
-    detail: 'Win % from 2,000 simulated fights before you commit to one.',
-  },
-  {
-    href: '/daily',
-    name: 'Daily',
-    line: 'The same three draft rolls for everyone, seeded by the date.',
-    detail: 'Everyone sees the same four faces. What you do with them is yours.',
+    href: '/labs',
+    name: 'Legacy Labs',
+    line: 'Explore the older Freestyle and Daily Draft experiments.',
+    detail: 'These modes use the original seeded score model, not the upcoming world resolver.',
   },
 ];
 
@@ -38,7 +32,7 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2">
         {MODES.map((m) => (
           <Link key={m.href} href={m.href} className="panel flex flex-col gap-3 p-5 hover:border-ash">
             <span className="display text-2xl">{m.name}</span>
@@ -55,7 +49,7 @@ export default function Home() {
           exact versions and loadouts are declared before the result. Contested branches select only
           between authored executions, and terminal costs can end a run even when the boss falls.
         </p>
-        <p className="max-w-2xl text-xs leading-relaxed text-ash">Freestyle and Daily remain available as seeded sandbox modes built from the wider {DB.characters.length}-character database.</p>
+        <p className="max-w-2xl text-xs leading-relaxed text-ash">The current authored edition remains replayable while the lore-constrained world resolver is built. Freestyle and Daily Draft are preserved in Legacy Labs using the wider {DB.characters.length}-character database.</p>
       </section>
     </div>
   );

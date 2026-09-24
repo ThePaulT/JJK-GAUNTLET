@@ -1,7 +1,7 @@
 import type { Breakdown } from '@/lib/engine.ts';
 
 const ROWS: { key: keyof Breakdown; label: string }[] = [
-  { key: 'topPower', label: 'Top power' },
+  { key: 'topPower', label: 'Top legacy rating' },
   { key: 'others', label: 'Support' },
   { key: 'flat', label: 'Rung bonus' },
   { key: 'synergy', label: 'Synergy' },

@@ -26,6 +26,15 @@ test('reject invalid pilot team, mode and ruleset without saving', async () => {
   expect(saved.length).toBe(count);
 });
 
+test('world-1 is reserved without falling through to a legacy resolver', async () => {
+  const count = saved.length;
+  const response = await send({ mode: 'gauntlet', side: 'hero', seed: 'future', teamIds: ['yuji'], ruleset: 'world-1' });
+  expect(response.status).toBe(501);
+  expect(await response.json()).toEqual({ error: 'world-1 is reserved until the event/state resolver is available.' });
+  expect(saved.length).toBe(count);
+  expect(await loadRun('w1_not-yet-implemented')).toBeNull();
+});
+
 test('memory-hosted pilot links replay without relying on the saved record', async () => {
   const response = await send({ mode: 'gauntlet', side: 'hero', seed: 'portable', teamIds: ['yuta','megumi','todo'], ruleset: 'curated-2' });
   const { id } = await response.json();

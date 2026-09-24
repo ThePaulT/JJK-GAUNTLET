@@ -39,7 +39,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-4 border-b border-sand pb-6">
         <span className="eyebrow">
-          {facts.sideLabel} · {isSolo ? 'authored rulings' : `${run.mode} · seed ${run.seed}`}
+          {facts.sideLabel} · {isSolo ? 'authored edition' : `legacy score model · ${run.mode} · seed ${run.seed}`}
         </span>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
