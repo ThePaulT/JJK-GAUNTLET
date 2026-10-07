@@ -1,7 +1,5 @@
-import { FreestyleGame } from '@/components/freestyle-game.tsx';
-
-export const metadata = { title: 'Freestyle Lab — JJK Gauntlet' };
+import { redirect } from 'next/navigation';
 
 export default function FreestylePage() {
-  return <FreestyleGame />;
+  redirect('/gauntlet');
 }

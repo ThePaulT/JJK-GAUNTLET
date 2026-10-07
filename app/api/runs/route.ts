@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   // own result, so a shared link can never show a run the engine did not make.
   if (body.ruleset === WORLD_RULESET) {
     return NextResponse.json(
-      { error: 'world-1 is reserved until the event/state resolver is available.' },
+      { error: 'World-1 replay saving is not available in this prototype.' },
       { status: 501 },
     );
   }

@@ -1,176 +1,82 @@
 # JJK Gauntlet
 
-Choose one fighter, run the five-rung ladder, and find out how far they get. The
-current Solo Gauntlet is a preserved authored edition with 60 matchup rulings,
-declared versions, scoped limit-break choices and replayable contested branches.
-It is not presented as the forthcoming lore-constrained world simulation. This
-is a Jujutsu Kaisen fan project built with Next.js App Router, TypeScript and
-Tailwind, deployable on Vercel.
+JJK Gauntlet is a `world-1` combat-simulation prototype. It resolves a fight as
+a causal sequence of legal actions, counters and state changes instead of
+choosing a winner from an aggregate power score.
 
-Freestyle and Daily Draft are preserved under Legacy Labs. They retain the seeded score engine backed by
-`data/jjk_gauntlet_db.json`: 48 characters, 23 counters, 5 domain rules, 28
-synergies and two ladders. Their percentages are repeated score-model trials,
-not causal lore simulations.
+The public prototype currently contains three focused encounters:
 
-`world-1` is the reserved identifier for the event/state resolver described in
-the world simulation specification. The API returns `501` for that ruleset until
-its resolver exists, and the future replay family is reserved as `w1_` so it can
-never be decoded as `solo-2`.
+- Yuji vs Mahito — soul access, domain activation and Simple Domain erosion.
+- Yuta vs Jogo — Rika pressure, domain clashes and contact-gated positive energy.
+- Maki vs Hanami — zero-CE targeting, physical battlefield control and the
+  Split Soul Katana.
 
-## Running it
+Each run is deterministic from its matchup, tactical intent and seed. The same
+input reproduces the same event log. Variation is limited to declared timing,
+positioning and execution checks; hard interaction rules are never rolled away.
+
+## Player experience
+
+The current `/` and `/gauntlet` routes present one flow:
+
+1. choose a matchup;
+2. choose an opening intent;
+3. simulate a legal branch;
+4. read the three-part fight story and final state;
+5. optionally inspect the mechanical event log.
+
+Canon rules, matchup inferences and prototype assumptions are labeled
+separately. The 48-seed outcome field shows the branches this prototype can
+execute; it is not presented as canon probability.
+
+Old Freestyle, Daily Draft and authored Solo screens are no longer part of the
+player-facing product. Their routes redirect to `/gauntlet`. Their code and
+replay families remain only so previously shared links can still be decoded.
+
+## World model
+
+`lib/world/` keeps the simulator separate from the frozen replay engines:
+
+- `data.ts` declares exact character versions, legal abilities, domains and
+  matchup conditions;
+- `types.ts` models body condition, cursed energy, technique state, burnout,
+  Simple Domain and soul damage independently;
+- `engine.ts` applies hard gates and bounded seeded checks, emits causal events,
+  and derives both the narrative and final result from those events.
+
+Important prototype boundaries:
+
+- Yuji's unnamed domain is withheld because its complete rules are not defined.
+- Hanami's unrevealed domain is unavailable rather than invented.
+- Yuta's positive-energy output only becomes decisive after contact is created.
+- Maki's zero cursed energy defeats CE-drain targeting, not physical matter.
+- Simple Domain suppresses a sure-hit temporarily; it does not erase a domain.
+
+## Run locally
 
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # no network or database required
+npm test
+npm run typecheck
+npm run lint
 npm run build
 ```
 
-Neither environment variable is required to play. See `.env.example`.
+No environment variable is required to run the prototype. World-1 replay saving
+is intentionally outside this prototype; the existing `/api/runs` route returns
+`501` for that ruleset instead of passing it into an older resolver.
 
-| Variable | Without it |
-| --- | --- |
-| `GEMINI_API_KEY` | Rounds are narrated from a local template instead of by a model. Google AI Studio's free tier covers this. |
-| `ANTHROPIC_API_KEY` | Nothing, unless `GEMINI_API_KEY` is empty — then Claude is the narrator instead. |
-| `DATABASE_URL` | Saved runs live in memory and disappear on restart. `/api/runs` says so in its response. |
+## Project layout
 
-### Deploying to Vercel
-
-The Next.js app is at this repository's root, so leave Vercel's **Root
-Directory** at the repository root. Set `DATABASE_URL` for durable saved runs.
-Optionally set `GEMINI_API_KEY` or `ANTHROPIC_API_KEY` for AI narration; without
-either key, local narration still works. The `runs` table is created on first use.
-
-## The three modes
-
-**Gauntlet** — choose one of twelve reviewed fighters, then face Hanami, Jogo,
-Mahito, Kenjaku and Sukuna in sequence. Each rung is a fresh encounter and the
-run stops when the fighter loses or pays a terminal cost. The exact versions,
-commitment, causal path and ruling boundary remain visible.
-
-**Freestyle Lab** — up to three a side, any mix. Win % comes from running the
-legacy score model 2,000 times before you commit to one trial. Cross-side
-synergies only exist here, and so do the rivalry penalties.
-
-**Daily Draft Lab** — the same three score-model rolls for everyone, seeded by
-the UTC date. Same groups, same faces, same order. What you take is the only
-variable. This is not the planned Daily World Prediction product.
-
-## How a round is decided
-
-Solo Gauntlet outcomes come from the explicit rulings in `lib/solo-data.ts`.
-Freestyle and Daily Draft use the legacy seeded score formula below. Nothing in
-this section is a `world-1` mechanic.
-
-```
-top_power + others_coef * sum(other_power * gap_factor) + synergy + counters
-          + domain + specials + rng
+```text
+app/                    public routes and API routes
+components/             World-1 simulator UI plus frozen replay components
+lib/world/              World-1 declarations, state model and resolver
+lib/solo*.ts            preserved authored replay engines
+lib/engine.ts           preserved score-engine replay compatibility
+tests/world.test.ts     World-1 determinism and interaction invariants
 ```
 
-Both sides are scored, the higher score wins, and the loser puts somebody on the
-ground (`fall_weight` = `(110 - power)`, halved for RCT users, scaled by a
-character's own `fall_weight`). Then:
-
-- **Clutch specials** are spent by whoever is behind — Yuki's Black Hole, Mei
-  Mei's Bird Strike, Yorozu's True Sphere, Ishigori's Granite Blast, Uro's
-  Deflect — and Kashimo's Amber fires on the first losing round whether it
-  saves him or not. Each one re-scores the round underneath the same dice.
-- **Megumi's Mahoraga gambit** fires when he is the one who would fall: 40% for
-  −15 to the opponent for that round. It can turn the round around. He falls
-  either way.
-- **Upsets** are rolled last, so an upset is always the thing that decided the
-  round. One roll, at the best chance the losing side has — a fired counter's
-  `upset_chance`, or the flat `underdog_upset_chance` once the gap reaches
-  `underdog_gap`.
-
-A run is a pure function of `(seed, side, team)`. The same seed always replays
-the same run — that is what makes a shared link honest, and what lets the tests
-assert rates instead of vibes.
-
-## Readings the database leaves open
-
-The DB states some rules in prose. Four readings were settled by the
-calibration rates below, and each is commented where it lives in
-`lib/engine.ts`:
-
-1. **`rng_range: 12` is a symmetric ±12 roll per side.** A `[0, 12]` roll makes
-   every underdog far too cold — Toji lands near 21% against Gojo instead of the
-   ~32% the spec asks for.
-2. **An open domain's pressure lands even on a side that brought a domain of its
-   own.** "Malevolent Shrine cuts everything in range": there is no barrier to
-   clash against, so a defender's own domain only halves it, zero cursed energy
-   stops mattering (`open_domain_exception`), and Simple Domain halves what is
-   left. A *closed* domain is still shut out entirely by any of the three
-   answers rule 1 lists.
-3. **Resonance needs a body part before it counters an incarnation.** The
-   counter's own explanation says so — Nobara reached Sukuna through a finger
-   she already had — so it fires on a retry, never on the opening exchange.
-   Without the condition the trio clears 8.8% instead of 7%.
-4. **An upset is one opening, not one per counter.** The losing side rolls
-   once, at the best `upset_chance` among its fired counters (or the flat
-   `underdog_upset_chance`). Rolling each counter independently stacks two
-   chances for Toji and puts him at 35% against Gojo rather than ~32%.
-
-Two smaller ones: `gauntlet`-scoped synergies apply in every mode while
-`freestyle`-scoped ones need mixed sides a draft cannot produce, and
-`synergy_cap` clamps in both directions so the rivalry penalties cannot exceed
-−8.
-
-## Calibration
-
-`tests/rates.test.ts` reproduces the target rates and fails on an engine change
-rather than on luck — every run in it is seeded.
-
-| Matchup | Target | Engine |
-| --- | --- | --- |
-| Yuji / Megumi / Nobara full clear | ~7% | 8.7% |
-| Yuji / Yuta / Maki full clear | ~23% | 22.2% |
-| Toji beats Gojo | ~32% | 33.2% |
-
-## Where the AI sits
-
-`rules.ai_role`: *"Narrates the result it is given. Never decides outcomes."*
-
-The narrator is whichever key is present: `GEMINI_API_KEY` (default,
-`gemini-3.6-flash`, free tier), else `ANTHROPIC_API_KEY` (`claude-opus-5`),
-else the local template. Google retires Flash models fairly quickly and the
-404 names the replacement, so the Gemini path follows that pointer once and
-logs the `GEMINI_MODEL=` line to make it permanent. Swapping one for the other changes only the prose —
-the fight is already over by then.
-
-`/api/narrate` is called **after** the engine has resolved a round. It receives
-the result as fact — winner, who fell, which counters fired, whether it was an
-upset and which side pulled it — and writes 3–4 sentences. Nothing it returns
-is fed back into the engine, and the system prompt forbids it from contradicting,
-hedging or reversing the result. Every failure — bad key, quota exhausted,
-safety block, empty answer — falls through to the local template, so a round
-always gets a story. The server log names the cause. Model output is run
-through `cleanStory` first: they reach for markdown emphasis however plainly
-the prompt forbids it, and the UI prints the story as plain text.
-
-## Sharing
-
-Saving a run POSTs to `/api/runs`, which **replays the seed server-side** and
-stores its own result, so a shared link can never show a run the engine did not
-produce. Each run gets a short `/run/[id]`:
-
-- a vertical result card at `/api/card/[id]` behind **Save image** — record,
-  rank title, the ladder rung by rung, MVP, the best line of the story, and
-  UPSET / HYPE stamps;
-- an OG image for link previews at the same URL;
-- a **Share on X** button with the text and the link.
-
-Freestyle is a sandbox and is not saved — its result has no record, rung or rank
-to put on a card.
-
-## Layout
-
-```
-data/     jjk_gauntlet_db.json — the source of truth
-lib/      engine, draft, rng, sim, narration, store, card artwork
-app/      routes: /, /gauntlet, /freestyle, /daily, /run/[id], /api/*
-tests/    engine rules, calibration rates, draft, story and card
-```
-
-Unofficial fan project, no affiliation with the rights holders. Original manga
-ch. 1–271, peak versions.
+Unofficial fan-made simulation. Jujutsu Kaisen belongs to its respective rights
+holders. Results are hypothetical, not canon events.

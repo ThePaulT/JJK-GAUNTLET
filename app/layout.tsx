@@ -6,31 +6,24 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'JJK Gauntlet',
   description:
-    'Choose one Jujutsu Kaisen fighter and see how far they get through five authored matchups.',
+    'Run lore-constrained Jujutsu Kaisen fights through a deterministic event and state simulator.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5">
+        <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6">
           <header className="flex items-baseline justify-between border-b border-sand py-5">
             <Link href="/" className="display text-xl tracking-[0.22em] uppercase">
               JJK Gauntlet
             </Link>
-            <nav className="flex gap-5 text-xs tracking-[0.14em] uppercase text-ash">
-              <Link href="/gauntlet" className="hover:text-bone">
-                Gauntlet
-              </Link>
-              <Link href="/labs" className="hover:text-bone">
-                Labs
-              </Link>
-            </nav>
+            <span className="text-[10px] tracking-[0.18em] uppercase text-curse sm:text-xs">World-1 · Prototype</span>
           </header>
-          <main className="flex-1 py-8">{children}</main>
+          <main className="flex-1 py-6 sm:py-10">{children}</main>
           <footer className="border-t border-sand py-5 text-xs text-ash">
-            Unofficial fan project. Current Solo results are authored game rulings; Legacy Labs use
-            the original score model. Neither is a canon event.
+            Unofficial fan-made simulation. Canon mechanics, matchup inference and prototype rules
+            are labeled separately. Results are hypothetical—not canon events.
           </footer>
         </div>
       </body>

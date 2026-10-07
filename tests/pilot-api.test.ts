@@ -26,11 +26,11 @@ test('reject invalid pilot team, mode and ruleset without saving', async () => {
   expect(saved.length).toBe(count);
 });
 
-test('world-1 is reserved without falling through to a legacy resolver', async () => {
+test('world-1 prototype does not fall through to a legacy replay resolver', async () => {
   const count = saved.length;
   const response = await send({ mode: 'gauntlet', side: 'hero', seed: 'future', teamIds: ['yuji'], ruleset: 'world-1' });
   expect(response.status).toBe(501);
-  expect(await response.json()).toEqual({ error: 'world-1 is reserved until the event/state resolver is available.' });
+  expect(await response.json()).toEqual({ error: 'World-1 replay saving is not available in this prototype.' });
   expect(saved.length).toBe(count);
   expect(await loadRun('w1_not-yet-implemented')).toBeNull();
 });
